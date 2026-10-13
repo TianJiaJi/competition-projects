@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import { X } from "lucide-vue-next";
+import { lockPageScroll } from './scroll-lock';
 const props = defineProps<{ title: string; wide?: boolean }>();
 const emit = defineEmits<{ close: [] }>();
 const panel = ref<HTMLElement | null>(null);
 const previous = document.activeElement as HTMLElement | null;
-const oldOverflow = document.body.style.overflow;
+let unlockScroll: (()=>void) | undefined;
 function keyboard(event: KeyboardEvent) {
   if (event.key === "Escape") {
     event.preventDefault();
@@ -28,7 +29,7 @@ function keyboard(event: KeyboardEvent) {
   }
 }
 onMounted(() => {
-  document.body.style.overflow = "hidden";
+  unlockScroll=lockPageScroll();
   document.addEventListener("keydown", keyboard);
   void nextTick(() =>
     panel.value?.querySelector<HTMLElement>("button")?.focus(),
@@ -36,8 +37,8 @@ onMounted(() => {
 });
 onBeforeUnmount(() => {
   document.removeEventListener("keydown", keyboard);
-  document.body.style.overflow = oldOverflow;
-  previous?.focus();
+  unlockScroll?.();
+  if(previous?.isConnected)previous.focus({preventScroll:true});
 });
 </script>
 <template>

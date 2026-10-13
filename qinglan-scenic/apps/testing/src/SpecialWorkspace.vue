@@ -2,15 +2,16 @@
 import { computed, ref, watch } from "vue";
 import { ArrowRight, Check, CheckCheck, FileText, Fingerprint, LockKeyhole, Package, Play, RefreshCw, RotateCcw, ShieldCheck, Users, Workflow, LoaderCircle } from "lucide-vue-next";
 import ModalFrame from "./ModalFrame.vue";
-import { businessMetrics, definition, scenarios, type ScenarioEvent, type ScenarioId, type ScenarioRuns } from "./special-engine";
-const props = defineProps<{ runs: ScenarioRuns; busy: boolean; busyId: ScenarioId | null }>();
-const emit = defineEmits<{ advance: [id: ScenarioId, step: number]; reset: [id: ScenarioId, parameter?: string]; report: [] }>();
-const selected = ref<ScenarioId>("claim"), selectedEvent = ref<ScenarioEvent | null>(null);
-const run = computed(() => props.runs[selected.value]), info = computed(() => definition(selected.value));
+import { businessMetrics, definition, scenarios, campusText, campusScenarios, type ScenarioEvent, type ScenarioId, type ScenarioRuns } from "./special-engine";
+const props = defineProps<{ runs: ScenarioRuns; busy: boolean; busyId: ScenarioId | null; campus?: boolean }>();
+const emit = defineEmits<{ advance: [id: ScenarioId, step: number]; reset: [id: ScenarioId, parameter?: string]; report: []; select: [id: ScenarioId] }>();
+const selected = ref<ScenarioId>(props.campus ? 'duplicate' : 'claim'), selectedEvent = ref<ScenarioEvent | null>(null);
+const run = computed(() => props.runs[selected.value]), info = computed(() => definition(selected.value,props.campus?'campus':'generic'));
+const visibleScenarios=computed(()=>props.campus?campusScenarios:scenarios);
 const icons = { claim: Users, duplicate: Fingerprint, stock: Package, permission: ShieldCheck, retry: RefreshCw, callback: Workflow };
-const completed = computed(() => Object.values(props.runs).filter(run => run.step === 3).length);
-const checks = computed(() => Object.values(props.runs).flatMap(run => run.assertions));
-const metrics = computed(() => businessMetrics(run.value));
+const completed = computed(() => visibleScenarios.value.filter(s=>props.runs[s.id].step===3).length);
+const checks = computed(() => visibleScenarios.value.flatMap(s=>props.runs[s.id].assertions));
+const metrics = computed(() => businessMetrics(run.value).map(metric=>({...metric,label:props.campus?campusText(metric.label):metric.label})));
 const recentEvents = computed(() => [...run.value.events].reverse());
 const processing = computed(() => props.busyId === selected.value);
 const passing = computed(() => run.value.step === 3 && run.value.assertions.every(check => check.passed));
@@ -26,20 +27,21 @@ const time = (at: string) => `${new Date(at).toLocaleTimeString("zh-CN", { timeZ
 const json = (value: unknown) => JSON.stringify(value, null, 2);
 const stateLabels: Record<string, string> = { orderId: "订单编号", owner: "订单持有人", stock: "库存", minStock: "最低库存", version: "版本", orderState: "订单状态", claimRecords: "领取记录", orders: "创建订单", writes: "业务写入", responseIds: "返回订单编号", denied: "权限拦截", sensitiveFields: "返回敏感字段", staleIgnored: "保护旧消息" };
 watch(() => run.value.id, () => { selectedEvent.value = null; });
+watch(selected,id=>emit('select',id));
 function inspectRequest(id: string) { selectedEvent.value = [...run.value.events].reverse().find(event => event.requestId === id) || null; }
 </script>
 
 <template>
   <section class="special-workspace" aria-label="专项验证工作区">
     <div class="scenario-picker" role="group" aria-label="选择专项场景">
-      <button v-for="scenario in scenarios" :key="scenario.id" :aria-label="scenario.name" :aria-pressed="selected === scenario.id" :disabled="busy" :class="{ selected: selected === scenario.id }" @click="selected = scenario.id">
+      <button v-for="scenario in visibleScenarios" :key="scenario.id" :aria-label="scenario.name" :aria-pressed="selected === scenario.id" :disabled="busy" :class="{ selected: selected === scenario.id }" @click="selected = scenario.id">
         <component :is="icons[scenario.id]" :size="18" />
         <span><b>{{ scenario.name }}</b><small>{{ scenario.short }}</small></span>
         <i :class="{ done: runs[scenario.id].step === 3 }">{{ status(runs[scenario.id].step) }}</i>
       </button>
     </div>
     <div class="special-summary">
-      <span><CheckCheck :size="16" />已核验 <b>{{ completed }} / 6</b> 项 <em>·</em> 断言通过 <b>{{ checks.filter(check => check.passed).length }} / {{ checks.length }}</b></span>
+      <span><CheckCheck :size="16" />已核验 <b>{{ completed }} / {{ visibleScenarios.length }}</b> 项 <em>·</em> 断言通过 <b>{{ checks.filter(check => check.passed).length }} / {{ checks.length }}</b></span>
       <button class="secondary small" :disabled="busy || completed === 0" @click="emit('report')"><FileText :size="15" />生成专项验收报告</button>
     </div>
     <div class="special-columns">
@@ -92,7 +94,7 @@ function inspectRequest(id: string) { selectedEvent.value = [...run.value.events
       <div class="special-evidence">
         <div class="evidence-intro"><strong>{{ selectedEvent.result }}</strong><span>{{ selectedEvent.actor }} · {{ time(selectedEvent.at) }}</span><code>{{ selectedEvent.requestId }}</code></div>
         <div class="evidence-json"><section><h3>请求输入</h3><pre>{{ json(selectedEvent.input) }}</pre></section><section><h3>处理响应</h3><pre>{{ json(selectedEvent.response) }}</pre></section></div>
-        <h3>业务状态前后对照</h3><div class="evidence-table"><table><thead><tr><th>字段</th><th>处理前</th><th>处理后</th></tr></thead><tbody><tr v-for="(label, key) in stateLabels" :key="key" :class="{ changed: json(selectedEvent.before[key as keyof typeof selectedEvent.before]) !== json(selectedEvent.after[key as keyof typeof selectedEvent.after]) }"><th>{{ label }}</th><td>{{ json(selectedEvent.before[key as keyof typeof selectedEvent.before]) }}</td><td>{{ json(selectedEvent.after[key as keyof typeof selectedEvent.after]) }}</td></tr></tbody></table></div>
+        <h3>业务状态前后对照</h3><div class="evidence-table"><table><thead><tr><th>字段</th><th>处理前</th><th>处理后</th></tr></thead><tbody><tr v-for="(label, key) in stateLabels" :key="key" :class="{ changed: json(selectedEvent.before[key as keyof typeof selectedEvent.before]) !== json(selectedEvent.after[key as keyof typeof selectedEvent.after]) }"><th>{{ campus ? campusText(label) : label }}</th><td>{{ json(selectedEvent.before[key as keyof typeof selectedEvent.before]) }}</td><td>{{ json(selectedEvent.after[key as keyof typeof selectedEvent.after]) }}</td></tr></tbody></table></div>
       </div>
     </ModalFrame>
   </section>

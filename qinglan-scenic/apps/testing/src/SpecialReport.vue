@@ -11,18 +11,18 @@ const time = (at: string) => new Date(at).toLocaleString("zh-CN", { hour12: fals
 <template>
   <ModalFrame title="专项验收报告" wide @close="emit('close')">
     <div class="special-report-body">
-      <div class="special-report-cover"><ShieldCheck :size="35" /><div><small>SPECIAL VERIFICATION REPORT</small><h3>{{ summary.completed === 6 ? '六项专项验证已完成' : `已核验 ${summary.completed} 项专项场景` }}</h3><p>{{ report.system.name }} · {{ report.id.slice(0, 8).toUpperCase() }} · {{ time(report.generatedAt) }}</p></div></div>
-      <div class="special-report-kpis"><article><span>已核验场景</span><strong>{{ summary.completed }}<small> / 6</small></strong></article><article><span>断言通过</span><strong>{{ summary.passed }}<small> / {{ summary.assertions }}</small></strong></article><article><span>运行记录</span><strong>{{ summary.events }}<small> 条</small></strong></article><article><span>累计执行</span><strong>{{ (report.elapsedMs / 1000).toFixed(1) }}<small> 秒</small></strong></article></div>
+      <div class="special-report-cover"><ShieldCheck :size="35" /><div><small>SPECIAL VERIFICATION REPORT</small><h3>{{ summary.completed === summary.total ? `${summary.total} 项专项验证已完成` : `已核验 ${summary.completed} 项专项场景` }}</h3><p>{{ report.system.name }} · {{ report.id.slice(0, 8).toUpperCase() }} · {{ time(report.generatedAt) }}</p></div></div>
+      <div class="special-report-kpis"><article><span>已核验场景</span><strong>{{ summary.completed }}<small> / {{ summary.total }}</small></strong></article><article><span>断言通过</span><strong>{{ summary.passed }}<small> / {{ summary.assertions }}</small></strong></article><article><span>运行记录</span><strong>{{ summary.events }}<small> 条</small></strong></article><article><span>累计执行</span><strong>{{ (report.elapsedMs / 1000).toFixed(1) }}<small> 秒</small></strong></article></div>
       <section v-for="run in summary.verified" :key="run.id" class="special-report-case">
-        <header><h4><CheckCheck :size="18" />{{ definition(run.scenarioId).name }}</h4><span>{{ run.assertions.every(check => check.passed) ? '验证通过' : '记录待复核' }}</span></header>
-        <p>{{ definition(run.scenarioId).parameter }}：{{ definition(run.scenarioId).options.find(option => option.value === run.parameter)?.label }} · {{ run.requests.length }} 次操作</p>
+        <header><h4><CheckCheck :size="18" />{{ definition(run.scenarioId,run.profile).name }}</h4><span>{{ run.assertions.every(check => check.passed) ? '验证通过' : '记录待复核' }}</span></header>
+        <p>{{ definition(run.scenarioId,run.profile).parameter }}：{{ definition(run.scenarioId,run.profile).options.find(option => option.value === run.parameter)?.label }} · {{ run.requests.length }} 次操作</p>
         <div class="special-report-facts"><span v-for="metric in businessMetrics(run)" :key="metric.label">{{ metric.label }} <b>{{ metric.value }}</b></span></div>
         <div class="special-report-table"><table><thead><tr><th>核验项目</th><th>预期值</th><th>记录值</th><th>结论</th></tr></thead><tbody><tr v-for="check in run.assertions" :key="check.label"><td>{{ check.label }}</td><td>{{ check.expected }}</td><td>{{ check.actual }}</td><td>{{ check.passed ? '通过' : '待复核' }}</td></tr></tbody></table></div>
         <details><summary>查看 {{ run.events.length }} 条处理证据</summary><div class="special-report-table"><table><thead><tr><th>请求编号</th><th>执行账户</th><th>处理结果</th></tr></thead><tbody><tr v-for="event in run.events" :key="event.id"><td>{{ event.requestId }}</td><td>{{ event.actor }}</td><td>{{ event.result }}</td></tr></tbody></table></div></details>
       </section>
       <p class="special-report-note">报告保留本轮参数、处理顺序与核验依据。完整状态快照和请求输入、响应可通过 JSON 导出。</p>
     </div>
-    <div class="dialog-footer special-report-actions"><span>本轮记录已保存于当前会话</span><button class="secondary" @click="emit('json')"><ArrowDownToLine :size="15" />导出原始 JSON</button><button class="primary" @click="emit('html')"><FileText :size="15" />下载 HTML 报告</button></div>
+    <div class="dialog-footer special-report-actions"><span>证据来源：本地场景引擎，不连接校园业务服务</span><button class="secondary" @click="emit('json')"><ArrowDownToLine :size="15" />导出原始 JSON</button><button class="primary" @click="emit('html')"><FileText :size="15" />下载 HTML 报告</button></div>
   </ModalFrame>
 </template>
 <style scoped>

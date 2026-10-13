@@ -41,7 +41,7 @@ export function loadReportHtml(report: MeasurementReport): string {
 <h1>压力测试报告</h1><p class="status">${status}</p>
 <div class="meta">系统：${escape(report.system.name)} · 接口：${escape(summary.endpointName)}<br>
 编号：${escape(report.id)}<br>开始：${escape(new Date(report.startedAt).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai", hour12: false }))} · 执行：${number(report.elapsedMs / 1000)} / ${report.config?.duration || 0} 秒<br>
-<code>GET ${escape(report.system.baseUrl)}${escape(summary.endpointPath)}</code></div>
+<code>${escape(summary.endpointMethod)} ${escape(report.system.baseUrl)}${escape(summary.endpointPath)}</code></div>
 <h2>负载统计</h2><div class="metrics">
 ${metric("峰值并发", number(summary.peakConcurrency, 0), `目标 ${number(report.config?.concurrency || 0, 0)}${summary.reachedTarget ? " · 已达目标" : ""}`)}
 ${metric("累计完成请求", number(stats.count, 0), `覆盖 ${number(report.elapsedMs / 1000)} 秒执行过程`)}

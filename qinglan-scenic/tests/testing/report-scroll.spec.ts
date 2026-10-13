@@ -1,0 +1,20 @@
+import {expect,test} from '@playwright/test';
+import {fixtures,receive,nav} from './helpers';
+test('批量确认切换到UI报告后释放滚动锁，验收页底部可滚动到达',async({page})=>{
+ await page.setViewportSize({width:1440,height:800});await fixtures(page);await receive(page);await nav(page,'UI测试');
+ await page.getByRole('button',{name:'一键完成五端检查',exact:true}).click();
+ await page.getByRole('button',{name:'已人工检查，完成并生成报告',exact:true}).click();
+ await expect(page.getByRole('dialog',{name:'UI测试报告',exact:true})).toBeVisible();
+ await expect(page.locator('body')).toHaveCSS('overflow','hidden');
+ await page.getByRole('button',{name:'关闭UI测试报告',exact:true}).click();
+ await expect(page.locator('body')).not.toHaveCSS('overflow','hidden');
+ await nav(page,'验收报告');await page.getByRole('button',{name:'汇总验收报告',exact:true}).click();
+ await page.mouse.move(400,500);await page.mouse.wheel(0,2500);
+ await expect.poll(()=>page.evaluate(()=>window.scrollY)).toBeGreaterThan(100);
+ await expect(page.getByRole('button',{name:'提交验收反馈',exact:true})).toBeInViewport();
+ await expect(page.getByRole('button',{name:'查看UI报告',exact:true})).toBeInViewport();
+ await page.getByRole('button',{name:'查看UI报告',exact:true}).click();await page.keyboard.press('Escape');
+ await expect(page.locator('body')).not.toHaveCSS('overflow','hidden');
+ await page.mouse.move(400,500);await page.mouse.wheel(0,-3000);
+ await expect.poll(()=>page.evaluate(()=>window.scrollY)).toBe(0);
+});

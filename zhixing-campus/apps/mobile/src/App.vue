@@ -5,4 +5,5 @@ export default { onLaunch() {} };
 @import "./style.css";
 @import "./ui-refinements.css";
 @import "./leave-form.css";
+@import "./approval-messages.css";
 </style>

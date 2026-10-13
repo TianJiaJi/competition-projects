@@ -1,6 +1,7 @@
 export interface EndpointConfig {
   id: string;
   name: string;
+  method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
   path: string;
   status: number;
   budget: number;
@@ -27,6 +28,8 @@ export interface Endpoint extends EndpointConfig {
   contract: string;
   validate: (body: unknown) => boolean;
   fixture: unknown;
+  fixtureStatus?: number;
+  fixtureBudget?: number;
 }
 export type SampleSource = "live" | "baseline" | "fallback" | "model";
 export type Outcome = "passed" | "failed" | "cancelled";
@@ -107,6 +110,9 @@ export interface LoadResult {
 }
 export interface MeasurementReport {
   id: string;
+  taskId?: string;
+  handoffId?: string;
+  caseNotes?: Record<string, { note: string; checkpoint: string }>;
   kind: "suite" | "load";
   system: SystemConfig;
   startedAt: string;

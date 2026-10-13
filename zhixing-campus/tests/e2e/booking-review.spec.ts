@@ -2,10 +2,26 @@ import { expect, test, type Page } from "@playwright/test";
 import { scenario } from "../../scenario/config";
 import { todayInShanghai } from "../../packages/bookings/src";
 import { setWheelTime } from './time-wheel-helper';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import type { Server } from 'node:http';
+import { createBookingServer } from '../../scripts/booking-service.mjs';
+let isolatedServer:Server, isolatedUrl:string, temporary:string;
+test.beforeEach(async()=>{
+  temporary=mkdtempSync(join(tmpdir(),'campus-approval-e2e-'));
+  isolatedServer=createBookingServer({dataFile:join(temporary,'bookings.json')});
+  await new Promise<void>(resolve=>isolatedServer.listen(0,'127.0.0.1',resolve));
+  const address=isolatedServer.address();if(!address || typeof address==='string')throw Error('测试服务未启动');
+  isolatedUrl=`http://127.0.0.1:${address.port}`;
+});
+test.afterEach(async()=>{await new Promise<void>((resolve,reject)=>isolatedServer.close(error=>error?reject(error):resolve()));rmSync(temporary,{recursive:true,force:true});});
+async function isolate(page:Page){await page.route('**/api/**',async route=>{const url=new URL(route.request().url());if(!url.pathname.startsWith('/api/')){await route.fallback();return;}const response=await route.fetch({url:isolatedUrl+url.pathname+url.search});await route.fulfill({response});});}
 const mobileUrl = `http://localhost:${process.env.E2E_MOBILE_PORT || scenario.ports.mobile}`;
 const staffUrl = `http://localhost:${process.env.E2E_STAFF_PORT || scenario.ports.staff}`;
 const adminUrl = `http://localhost:${process.env.E2E_ADMIN_PORT || scenario.ports.admin}`;
 async function studentLogin(page: Page) {
+  await isolate(page);
   await page.goto(`${mobileUrl}/#/pages/login/index`);
   await page.getByRole("button", { name: "登录", exact: true }).click();
 }
@@ -24,6 +40,7 @@ async function studentBooking(page: Page, activity: string) {
   return (await response.json()).data.id as string;
 }
 async function teacherLogin(page: Page) {
+  await isolate(page);
   await page.goto(staffUrl);
   await page.getByRole("button", { name: "进入工作台" }).click();
 }
@@ -32,6 +49,7 @@ test("学生完整预约 → 教师终审 → 学生查看/取消，管理员只
   const student = await browser.newPage({ viewport: { width: 390, height: 844 } });
   const teacher = await browser.newPage({ viewport: { width: 1366, height: 768 } });
   const admin = await browser.newPage();
+  await isolate(admin);
   const activity = `课程研讨${Date.now()}`;
   try {
     await studentLogin(student);
@@ -46,7 +64,7 @@ test("学生完整预约 → 教师终审 → 学生查看/取消，管理员只
     await expect(teacher.getByRole("dialog")).toContainText("软件工程项目讨论与汇报");
     await teacher.getByRole("button", { name: "通过申请" }).click();
     await expect(teacher.getByRole("dialog")).toContainText("已预约");
-    await student.getByRole("button", { name: "刷新预约状态" }).click();
+    await student.getByRole("button", { name: "刷新审批消息" }).click();
     await expect(card).toContainText("已预约");
     await admin.goto(`${adminUrl}/#/bookings`);
     await admin.getByRole("button", { name: "进入工作台" }).click();
@@ -76,7 +94,7 @@ test("教师拒绝预约需原因；学生可见反馈", async ({ browser }) => 
     await expect(teacher.getByRole("alert")).toContainText("请填写原因");
     await teacher.getByRole("textbox", { name: "拒绝原因" }).fill("请补充活动材料");
     await teacher.getByRole("button", { name: "拒绝申请" }).click();
-    await student.getByRole("button", { name: "刷新预约状态" }).click();
+    await student.getByRole("button", { name: "刷新审批消息" }).click();
     await expect(student.locator(".notice-card").filter({ hasText: activity })).toContainText("审核说明：请补充活动材料");
   } finally { await student.close(); await teacher.close(); }
 });
@@ -133,7 +151,7 @@ test("学生请假 → 教师审批 → 学生查看结果", async ({ browser })
     await expect(teacher.getByRole('dialog')).toContainText('08:10:15');
     await expect(teacher.getByRole('dialog')).toContainText('10:30:20');
     await teacher.getByRole("button", { name: "通过申请" }).click();
-    await student.getByRole("button", { name: "刷新预约状态" }).click();
+    await student.getByRole("button", { name: "刷新审批消息" }).click();
     await expect(card).toContainText("已通过");
     const reviewerBox = await card.locator('.record-reviewer').boundingBox();
     const cancelBox = await card.getByRole('button', { name: '取消请假' }).boundingBox();

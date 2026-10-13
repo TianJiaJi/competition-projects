@@ -36,10 +36,10 @@
     "dev:all": "node scripts/dev-all.mjs",
     "test:display": "playwright test -c playwright.display.config.ts",
     "test:performance": "playwright test -c playwright.performance.config.ts",
-    "dev:testing": "pnpm --filter @scenic/testing dev",
+    "dev:testing": "node scripts/dev-testing.mjs",
     "build:testing": "pnpm --filter @scenic/testing build",
     "typecheck:testing": "pnpm --filter @scenic/testing typecheck",
-    "test:testing": "vitest run tests/unit/testing-panel.test.ts tests/unit/testing-special.test.ts tests/unit/testing-services.test.ts && playwright test -c playwright.testing.config.ts"
+    "test:testing": "vitest run tests/unit/testing-panel.test.ts tests/unit/testing-special.test.ts tests/unit/testing-services.test.ts tests/unit/testing-handoff.test.ts tests/unit/testing-startup.test.ts tests/unit/testing-campus-special.test.ts tests/unit/testing-acceptance.test.ts && playwright test -c playwright.testing.config.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",

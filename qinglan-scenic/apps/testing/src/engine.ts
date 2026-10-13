@@ -114,7 +114,7 @@ export function modelSample(
     Math.max(
       0.1,
       Math.min(
-        endpoint.budget * 0.92,
+        (endpoint.fixtureBudget ?? endpoint.budget) * 0.92,
         median * (0.7 + 0.65 * individual + 0.35 * individual ** 6),
       ),
     ),
@@ -123,13 +123,14 @@ export function modelSample(
     endpoint.fixture === undefined
       ? ""
       : JSON.stringify(endpoint.fixture, null, 2);
-  const checks = assess(endpoint, endpoint.status, endpoint.fixture, elapsedMs);
+  const responseStatus = endpoint.fixtureStatus ?? endpoint.status;
+  const checks = assess(endpoint, responseStatus, endpoint.fixture, elapsedMs);
   return {
     endpointId: endpoint.id,
     source,
     at: new Date().toISOString(),
     elapsedMs,
-    status: endpoint.status,
+    status: responseStatus,
     outcome: checks.every((c) => c.passed) ? "passed" : "failed",
     checks,
     requestId: `${source}-${endpoint.id}-${sequence}`,
@@ -414,6 +415,7 @@ export function loadReportSummary(report: MeasurementReport) {
   return {
     endpointName: endpoint?.name || "未记录接口",
     endpointPath: endpoint?.path || "—",
+    endpointMethod: endpoint?.method || 'GET',
     statistics,
     observedStatistics,
     peakConcurrency,

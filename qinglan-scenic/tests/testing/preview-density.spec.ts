@@ -1,0 +1,21 @@
+import {expect,test} from '@playwright/test';
+import {fixtures,receive,nav,selectChoice,noOverflow} from './helpers';
+test('调整内容密度扩大逻辑视口但保持外框和当前页面，不重新加载预览',async({page})=>{
+ await page.setViewportSize({width:1440,height:900});await fixtures(page);let requests=0;
+ page.on('request',r=>{if(/:5502\//.test(r.url()))requests++;});
+ await receive(page);await nav(page,'UI测试');await page.getByRole('button',{name:'打开项目预览',exact:true}).click();
+ await expect(page.frameLocator('iframe').getByRole('heading',{name:'知行校园项目',exact:true})).toBeVisible();
+ const before=await page.locator('.scaled-frame').boundingBox();
+ const count=requests;
+ await expect(page.getByRole('combobox',{name:'预览内容密度',exact:true})).toHaveText('更多内容 · 70%');
+ await selectChoice(page,'预览内容密度','紧凑 · 85%');
+ const logicalBefore=await page.locator('iframe').evaluate(el=>(el as HTMLIFrameElement).clientHeight);
+ await selectChoice(page,'预览内容密度','更多内容 · 70%');
+ const after=await page.locator('.scaled-frame').boundingBox();
+ expect(after!.width).toBeCloseTo(before!.width,0);expect(after!.height).toBeCloseTo(before!.height,0);
+ expect(await page.locator('iframe').evaluate(el=>(el as HTMLIFrameElement).clientHeight)).toBeGreaterThan(logicalBefore);
+ expect(requests).toBe(count);
+ await selectChoice(page,'预览内容密度','原始 · 100%');
+ expect(await page.locator('iframe').evaluate(el=>(el as HTMLIFrameElement).style.width)).toBe('390px');
+ await noOverflow(page);
+});

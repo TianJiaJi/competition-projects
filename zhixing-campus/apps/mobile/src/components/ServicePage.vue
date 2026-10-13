@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, onBeforeUnmount, onMounted } from "vue";
+import { computed, reactive, ref, watch, onBeforeUnmount, onMounted } from "vue";
 import Icon from "./Icon.vue";
 import { state, scenario, themeStyle, selection } from "../store";
 import { navigate, home, back, notify } from "../platform";
@@ -31,7 +31,11 @@ function fieldValue(event: unknown): string {
   const field = event as { detail?: { value?: unknown }; target?: { value?: unknown } };
   return String(field.detail?.value ?? field.target?.value ?? '');
 }
-const props = defineProps<{ page: string }>();
+const props = defineProps<{ page: string; initialCategory?: string }>();
+const recordCategory = ref('booking');
+const recordCategories = [{id:'booking',label:'预约消息'},{id:'leave',label:'请假消息'},{id:'other',label:'其他服务'}];
+watch(()=>props.initialCategory,value=>{recordCategory.value=['booking','leave','other'].includes(value || '') ? value! : 'booking';},{immediate:true});
+function openMessages(category:string) { if(auth()) navigate('records',`category=${category}`); }
 const query = ref("");
 const form = reactive({
   title: "",
@@ -77,7 +81,7 @@ const titles: Record<string, string> = {
   assistant: "服务助手",
   detail: "服务详情",
   login: "学生登录",
-  records: "我的服务记录",
+  records: "审批消息与服务记录",
 };
 const title = computed(() => titles[props.page] ?? "服务");
 const detail = computed(() =>
@@ -90,10 +94,11 @@ const facilities = computed(() =>
     `${r.title}${r.location}`.includes(query.value),
   ),
 );
-const records = computed<Array<RecordItem & { bookingId?: string; leaveId?: string; reviewReason?: string; reviewer?: string; timeRange?: string }>>(() => [
+const records = computed<Array<RecordItem & { bookingId?: string; leaveId?: string; reviewReason?: string; reviewer?: string; timeRange?: string; updatedAt?: string }>>(() => [
   ...sharedBookings.value.map((booking) => ({
     id: booking.id,
     bookingId: booking.id,
+    updatedAt: booking.updatedAt || booking.createdAt,
     title: booking.activity || `${booking.venue}预约`,
     location: booking.venue,
     category: "教室预约",
@@ -107,6 +112,7 @@ const records = computed<Array<RecordItem & { bookingId?: string; leaveId?: stri
   ...sharedLeaves.value.map((leave) => ({
     id: leave.id,
     leaveId: leave.id,
+    updatedAt: leave.updatedAt || leave.createdAt,
     title: `${leave.type}申请`,
     location: "学生请假",
     timeRange: formatLeaveRange(leave),
@@ -120,6 +126,12 @@ const records = computed<Array<RecordItem & { bookingId?: string; leaveId?: stri
   })),
   ...[...state.records.tasks, ...state.records.visitors].filter((r) => r.owner === state.identity),
 ]);
+function categoryOf(item: {bookingId?:string;leaveId?:string}) { return item.bookingId?'booking':item.leaveId?'leave':'other'; }
+const visibleRecords=computed(()=>records.value.filter(item=>categoryOf(item)===recordCategory.value).sort((a,b)=>{
+  const time=(value:string|undefined)=>{const n=Date.parse(value || '');return Number.isFinite(n)?n:0;};
+  return time(b.updatedAt || b.date)-time(a.updatedAt || a.date) || b.id.localeCompare(a.id);
+}));
+function updatedLabel(value:string) { return new Date(value).toLocaleString('zh-CN',{hour12:false}); }
 const nav = [
   { page: "home", label: "首页", icon: "house" },
   { page: "services", label: "服务", icon: "map-pin" },
@@ -165,7 +177,7 @@ function submit() {
   form.title = "";
   form.description = "";
   notify("提交成功");
-  navigate("records");
+  navigate("records", "category=other");
 }
 async function cancelBooking(id: string, kind: "booking" | "leave" = "booking") {
   if (!state.identity || cancellingId.value) return;
@@ -248,7 +260,7 @@ onBeforeUnmount(() => clearInterval(timer));
           >
             开始教室预约 ↗
           </button></view
-        ><view class="section-title"
+        ><view class="approval-entry"><view><text class="card-title">审批消息</text><text class="tiny muted">预约与请假分开查看，及时掌握审批结果</text></view><view class="approval-entry-actions"><button role="button" @click="openMessages('booking')">预约消息 <text>↗</text></button><button role="button" @click="openMessages('leave')">请假消息 <text>↗</text></button></view></view><view class="section-title"
           ><text>我的校园服务</text
           ><text class="tiny muted">STUDENT SERVICES</text></view
         ><view class="quick-grid campus-services"
@@ -392,7 +404,9 @@ onBeforeUnmount(() => clearInterval(timer));
             role="button"
             @click="state.identity ? navigate('records') : navigate('login')"
           >
-            我的服务记录 <text>↗</text></button
+            预约消息 <text>↗</text></button
+          ><button role="button" @click="openMessages('leave')">请假消息 <text>↗</text></button
+          ><button role="button" @click="openMessages('other')">其他服务记录 <text>↗</text></button
           ><button role="button" @click="navigate('leave')">学生请假 <text>↗</text></button
           ><button role="button" @click="navigate('notices')">
             公告消息 <text>↗</text></button
@@ -432,22 +446,25 @@ onBeforeUnmount(() => clearInterval(timer));
       >
       <template v-else-if="page === 'records'"
         ><view class="page-intro"
-          ><text class="page-title">服务，有迹可循。</text
-          ><text class="body-copy">查看教室预约与学生请假申请；教师审批后刷新即可看到结果。</text></view
-        ><button role="button" class="secondary-button" :disabled="bookingsLoading" @click="refreshBookings">{{ bookingsLoading ? "正在刷新…" : "刷新预约状态" }}</button
+          ><text class="page-title">每份申请，都有回应。</text
+          ><text class="body-copy">预约、请假分别查看，最新审批和状态变化排在前面。</text></view
+        ><view class="record-category-tabs" role="tablist" aria-label="消息分类"><button v-for="category in recordCategories" :key="category.id" role="button" :aria-pressed="recordCategory===category.id" :class="{active:recordCategory===category.id}" @click="recordCategory=category.id">{{category.label}}<text>{{records.filter(item=>categoryOf(item)===category.id).length}}</text></button></view
+        ><view class="record-sort-note">按最近更新时间排序 · 最新在前</view
+        ><button role="button" class="secondary-button" :disabled="bookingsLoading" @click="refreshBookings">{{ bookingsLoading ? "正在刷新…" : "刷新审批消息" }}</button
         ><text v-if="error" class="form-error" role="alert">{{ error }}</text
-        ><view v-if="!records.length && !bookingsLoading && !error" class="empty-state"
-          ><text>还没有服务记录</text
+        ><view v-if="!visibleRecords.length && !bookingsLoading && !error" class="empty-state"
+          ><text>暂无{{recordCategories.find(c=>c.id===recordCategory)?.label}}</text
           ><button
             role="button"
             class="secondary-button"
-            @click="navigate('booking')"
+            @click="navigate(recordCategory==='leave'?'leave':recordCategory==='other'?'repair':'booking')"
           >
-            预约教室
+            {{recordCategory==='leave'?'申请请假':recordCategory==='other'?'报修服务':'预约教室'}}
           </button></view
-        ><view v-for="item in records" :key="item.id" class="notice-card service-record">
+        ><view v-for="item in visibleRecords" :key="item.id" class="notice-card service-record">
           <text class="status-pill" :class="{ warning: item.status === '待审核', rejected: item.status === '已拒绝' }">{{ item.status }}</text>
           <text class="record-title">{{ item.title }}</text>
+          <text v-if="item.updatedAt" class="record-updated">最近更新 {{ updatedLabel(item.updatedAt) }}</text>
           <text class="record-meta">{{ item.timeRange || `${item.location} · ${item.date}` }}</text>
           <text class="record-description">{{ item.description }}</text>
           <view v-if="item.reviewer || item.reviewReason" class="record-review">

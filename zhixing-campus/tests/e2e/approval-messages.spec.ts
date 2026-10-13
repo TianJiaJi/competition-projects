@@ -1,0 +1,23 @@
+import {expect,test} from '@playwright/test';
+const url=`http://localhost:${process.env.E2E_MOBILE_PORT || 5502}`;
+test('首页可直达请假与预约，分类隔离且按更新时间降序',async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  await page.addInitScript(()=>localStorage.setItem('zhixing:student-session','林悦'));
+  const base={owner:'林悦',classId:'CLS-2401',status:'approved',createdAt:'2026-01-01T08:00:00+08:00',reviewer:'陈越'};
+  await page.route('**/api/bookings?**',route=>route.fulfill({json:{data:[{...base,id:'B1',activity:'较早预约',venue:'教室305',date:'2026-11-01',time:'18:00–19:00',count:2,purpose:'讨论',updatedAt:'2026-01-02T08:00:00+08:00'},{...base,id:'B2',activity:'最新预约',venue:'教室306',date:'2026-10-01',time:'18:00–19:00',count:2,purpose:'讨论',updatedAt:'2026-01-05T08:00:00+08:00'}]}}));
+  await page.route('**/api/leaves?**',route=>route.fulfill({json:{data:[{...base,id:'L1',type:'事假',reason:'较早请假',startDate:'2026-11-01',endDate:'2026-11-01',startTime:'08:00:00',endTime:'09:00:00',updatedAt:'2026-01-02T08:00:00+08:00'},{...base,id:'L2',type:'病假',reason:'最新请假',startDate:'2026-10-01',endDate:'2026-10-01',startTime:'08:00:00',endTime:'09:00:00',updatedAt:'2026-01-06T08:00:00+08:00'}]}}));
+  await page.goto(`${url}/#/pages/home/index`);
+  await page.locator('.approval-entry').getByRole('button',{name:/请假消息/}).click();
+  await expect(page.locator('.service-record')).toHaveCount(2);
+  await expect(page.locator('.service-record').first()).toContainText('最新请假');
+  await expect(page.locator('.service-record')).not.toContainText(['预约','预约']);
+  await page.locator('.record-category-tabs').getByRole('button',{name:/预约消息/}).click();
+  await expect(page.locator('.service-record')).toHaveCount(2);
+  await expect(page.locator('.service-record').first()).toContainText('最新预约');
+  await expect(page.locator('.service-record').first()).toContainText('审核教师：陈越');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.screenshot({path:'test-results/approval-messages-booking.png',fullPage:true});
+  await page.goto(`${url}/#/pages/records/index?category=leave`);
+  await expect(page.locator('.service-record').first()).toContainText('最新请假');
+  await page.screenshot({path:'test-results/approval-messages-leave.png',fullPage:true});
+});

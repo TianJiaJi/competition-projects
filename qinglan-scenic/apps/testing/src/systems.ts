@@ -1,4 +1,5 @@
 import { defaultEndpoints } from "./catalog";
+import { deliveryEndpoints } from './campus-handoff';
 import { campusEndpoints, campusSystem, CAMPUS_SYSTEM_ID } from "./service-catalog";
 import type { Endpoint, EndpointConfig, SystemConfig } from "./types";
 
@@ -14,7 +15,7 @@ export interface SystemStore {
   activeId: string;
   systems: SystemConfig[];
 }
-const contractTemplates = [...defaultEndpoints, ...campusEndpoints];
+const contractTemplates = [...defaultEndpoints, ...campusEndpoints, ...deliveryEndpoints];
 export const cloneSystem = (system: SystemConfig): SystemConfig =>
   JSON.parse(JSON.stringify(system));
 export function defaultSystem(): SystemConfig {
@@ -137,6 +138,7 @@ export function validateSystem(value: unknown): string[] {
       endpoint.name.length > 40
     )
       errors.push(prefix + "名称需为 1–40 个字符");
+    if (endpoint.method !== undefined && !['GET', 'POST', 'PATCH', 'PUT', 'DELETE'].includes(endpoint.method)) errors.push(prefix + 'HTTP方法无效');
     if (!validPath(endpoint.path) || endpoint.path.length > 2048)
       errors.push(prefix + "路径需以单个 / 开始，不能包含空格、片段或上级目录");
     if (
@@ -165,13 +167,13 @@ export function resolveEndpoints(system: SystemConfig): Endpoint[] {
       (e) =>
         e.id === config.contractId &&
         e.path === config.path &&
-        e.status === config.status,
+        (e.id.startsWith('delivery-') || e.status === config.status),
     );
     if (template)
       return {
         ...template,
         ...config,
-        baseline: Math.min(template.baseline, config.budget * 0.25),
+        baseline: template.fixtureBudget ? template.baseline : Math.min(template.baseline, config.budget * 0.25),
       };
     const emptyBody = [204, 205, 304].includes(config.status);
     return {

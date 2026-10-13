@@ -1,0 +1,22 @@
+import {expect,test} from '@playwright/test';
+import {fixtures,receive,nav,selectChoice} from './helpers';
+for(const height of [720,960])test(`设备切换独立密度，桌面不按高度二次缩小 ${height}`,async({page})=>{
+ await page.setViewportSize({width:1920,height});await fixtures(page);await receive(page);await nav(page,'UI测试');
+ await page.getByRole('button',{name:'打开项目预览',exact:true}).click();
+ await expect(page.frameLocator('iframe').getByRole('heading',{name:'知行校园项目',exact:true})).toBeVisible();
+ await expect(page.getByRole('combobox',{name:'预览视口宽度',exact:true})).toHaveText('390 px');
+ await selectChoice(page,'预览内容密度','更多内容 · 70%');
+ await page.getByRole('button',{name:'桌面',exact:true}).click();
+ await expect(page.getByRole('combobox',{name:'预览内容密度',exact:true})).toHaveText('原始 · 100%');
+ const box=await page.locator('.scaled-frame').boundingBox();
+ const viewport=await page.locator('.project-viewport').boundingBox();
+ expect(box!.width).toBeCloseTo(Math.min(1280,viewport!.width-32),0);
+ expect(box!.height).toBeGreaterThan(viewport!.height-65);
+ expect(box!.y+box!.height).toBeLessThan(height);
+ await page.screenshot({path:`.local/qa/testing-desktop-fit-${height}.png`});
+ await page.getByRole('button',{name:'手机',exact:true}).click();
+ await expect(page.getByRole('combobox',{name:'预览内容密度',exact:true})).toHaveText('更多内容 · 70%');
+ const phone=await page.locator('.scaled-frame').boundingBox();expect(phone!.width).toBeCloseTo(390,0);
+ expect(phone!.height).toBeGreaterThan(viewport!.height-65);
+ await page.screenshot({path:`.local/qa/testing-phone-fit-${height}.png`});
+});

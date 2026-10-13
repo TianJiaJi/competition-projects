@@ -1,0 +1,44 @@
+import { expect, test } from '@playwright/test';
+import { fixtures, receive, nav, noOverflow, selectChoice } from './helpers';
+test.beforeEach(async({page})=>fixtures(page));
+test('检查结果使用绿色自定义菜单而非原生选项，整改校验仍有效',async({page})=>{
+  await receive(page);await nav(page,'UI测试');
+  const select=page.getByRole('combobox',{name:'检查结果1',exact:true});
+  await expect(page.locator('.ui-checklist select')).toHaveCount(0);
+  await select.click();
+  const menu=page.getByRole('listbox',{name:'检查结果1选项',exact:true});
+  await expect(menu.getByRole('option')).toHaveCount(3);
+  await expect(menu.getByRole('option',{name:'待检查',exact:true})).toHaveAttribute('aria-selected','true');
+  await expect(menu).toHaveCSS('border-radius','9px');
+  await expect(menu.getByRole('option',{name:'待检查',exact:true})).toHaveCSS('background-color','rgb(228, 238, 219)');
+  await page.evaluate(()=>window.scrollTo(0,0));
+  await page.screenshot({path:'.local/qa/testing-ui-themed-select.png',fullPage:true});
+  await menu.getByRole('option',{name:'需整改',exact:true}).click();
+  await expect(select).toHaveText('需整改');await expect(menu).toHaveCount(0);
+  await page.getByRole('button',{name:'保存页面检查',exact:true}).click();
+  await expect(page.getByRole('alert')).toContainText('问题描述');
+  await page.getByLabel('检查备注1',{exact:true}).fill('统一菜单样式已检查');
+  await page.getByRole('button',{name:'保存页面检查',exact:true}).click();
+  await expect(page.getByRole('status')).toContainText('页面检查已保存');
+  await noOverflow(page);
+});
+test('绿色菜单支持方向键/Enter选择、Escape取消和点击外部关闭，不自动保存',async({page})=>{
+  await receive(page);await nav(page,'UI测试');
+  const select=page.getByRole('combobox',{name:'检查结果1',exact:true});
+  await select.focus();await page.keyboard.press('ArrowDown');await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');
+  await expect(select).toHaveText('通过');await expect(select).toHaveAttribute('aria-expanded','false');
+  await select.click();await page.keyboard.press('End');await page.keyboard.press('Escape');
+  await expect(select).toHaveText('通过');await expect(select).toBeFocused();
+  await select.click();await page.getByRole('heading',{name:'打开真实项目，逐项检查界面。',exact:true}).click();
+  await expect(select).toHaveAttribute('aria-expanded','false');
+  await nav(page,'验收报告');await page.getByRole('button',{name:'汇总验收报告',exact:true}).click();
+  await expect(page.locator('.acceptance-stat-grid article').first().locator('b')).toHaveText('0/ 17');
+});
+test('预览尺寸菜单同步主题，手机宽度选择仍生效',async({page})=>{
+  await receive(page);await nav(page,'UI测试');
+  await page.getByRole('button',{name:'打开项目预览',exact:true}).click();
+  await selectChoice(page,'预览内容密度','原始 · 100%');
+  await selectChoice(page,'预览视口宽度','430 px');
+  await expect(page.getByRole('combobox',{name:'预览视口宽度',exact:true})).toHaveText('430 px');
+  expect(await page.locator('iframe').evaluate(frame=>(frame as HTMLIFrameElement).style.width)).toBe('430px');
+});

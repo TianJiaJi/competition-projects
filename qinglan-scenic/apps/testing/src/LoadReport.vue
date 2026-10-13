@@ -32,7 +32,7 @@ const started = computed(() => new Date(props.report.startedAt).toLocaleString("
         <span>编号 <b>{{ report.id.slice(0, 8).toUpperCase() }}</b></span>
         <span>开始 {{ started }}</span>
         <span>执行 {{ format(report.elapsedMs / 1000) }} / {{ report.config?.duration }} 秒</span>
-        <code>GET {{ report.system.baseUrl }}{{ summary.endpointPath }}</code>
+        <code>{{ summary.endpointMethod }} {{ report.system.baseUrl }}{{ summary.endpointPath }}</code>
       </div>
 
       <section aria-label="负载统计">
@@ -78,7 +78,7 @@ const started = computed(() => new Date(props.report.startedAt).toLocaleString("
       </section>
     </div>
     <div class="dialog-footer load-report-actions">
-      <span>测试成果已保存于本次会话 · 原始记录可导出 JSON</span>
+      <span>本地模型证据 · 原始记录可导出 JSON</span>
       <button class="secondary" @click="emit('json')"><ArrowDownToLine :size="15" />导出原始 JSON</button>
       <button class="primary" @click="emit('html')"><FileText :size="15" />下载 HTML 报告</button>
     </div>

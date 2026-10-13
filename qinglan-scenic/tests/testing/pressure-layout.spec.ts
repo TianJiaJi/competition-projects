@@ -1,0 +1,54 @@
+import { expect, test } from '@playwright/test';
+import { fixtures, receive, nav, generateApi, noOverflow } from './helpers';
+test.beforeEach(async ({page})=>fixtures(page));
+for (const width of [1280,1440,1920]) {
+  test(`原绿色主题及压测布局 ${width}px：左侧配置、双曲线、未启动无测试数据`,async({page})=>{
+    await page.setViewportSize({width,height:1100});
+    await receive(page);
+    await generateApi(page);
+    await nav(page,'压力测试');
+    await expect(page.getByRole('heading',{name:'观察系统，如何承受压力。',exact:true})).toBeVisible();
+    await expect(page.locator('.pressure-workspace .metrics article')).toHaveCount(4);
+    await expect(page.locator('.pressure-config')).toBeVisible();
+    await expect(page.locator('.pressure-stage .stage-stair > span')).toHaveCount(5);
+    await expect(page.locator('.load-chart-panel,.latency-live-panel')).toHaveCount(2);
+    await expect(page.locator('.trend-chart polyline:not([points=""]),.trend-chart polygon,.trend-chart .chart-cursor')).toHaveCount(0);
+    await expect(page.getByRole('button',{name:'加压一级',exact:true})).toBeDisabled();
+    const colors=await page.evaluate(()=>({brand:getComputedStyle(document.documentElement).getPropertyValue('--brand').trim(),background:getComputedStyle(document.documentElement).backgroundColor,nav:getComputedStyle(document.querySelector('.workbench-sidebar nav .active')!).backgroundColor}));
+    expect(colors).toEqual({brand:'#25634f',background:'rgb(245, 247, 243)',nav:'rgb(44, 98, 77)'});
+    const config=await page.locator('.pressure-config').boundingBox(), chart=await page.locator('.load-chart-panel').boundingBox(), latency=await page.locator('.latency-live-panel').boundingBox();
+    expect(chart!.x).toBeGreaterThanOrEqual(config!.x+config!.width);
+    expect(latency!.y).toBeGreaterThanOrEqual(chart!.y+chart!.height);
+    await noOverflow(page);
+    await page.evaluate(()=>window.scrollTo(0,0));
+    await page.screenshot({path:`.local/qa/testing-pressure-restored-${width}.png`,fullPage:true});
+  });
+}
+test('加压停止及栏目切换保留本轮曲线，刷新后同样保留',async({page})=>{
+  await receive(page); await generateApi(page); await nav(page,'压力测试');
+  await page.getByLabel('目标并发',{exact:true}).fill('20');
+  await page.getByLabel('持续时长',{exact:true}).fill('10');
+  await page.getByRole('button',{name:'开始压力测试',exact:true}).click();
+  await expect(page.getByRole('button',{name:'加压一级',exact:true})).toBeEnabled();
+  await page.getByRole('button',{name:'加压一级',exact:true}).click();
+  await expect(page.locator('.event-strip')).toContainText('手动');
+  await page.getByRole('button',{name:'停止压测',exact:true}).click();
+  await expect(page.locator('.load-report-entry')).toBeVisible();
+  await expect(page.locator('.pressure-stage .stage-time')).toContainText('/ 10 s');
+  await expect(page.locator('.trend-chart .chart-cursor')).toHaveCount(2);
+  await nav(page,'交付概览'); await nav(page,'压力测试');
+  await expect(page.getByLabel('目标并发',{exact:true})).toHaveValue('20');
+  await expect(page.getByLabel('持续时长',{exact:true})).toHaveValue('10');
+  await expect(page.locator('.pressure-stage .stage-time')).toContainText('/ 10 s');
+  await expect(page.locator('.event-strip')).toContainText('手动');
+  await expect(page.locator('.trend-chart .chart-cursor')).toHaveCount(2);
+  await page.evaluate(()=>window.scrollTo(0,0));
+  await page.screenshot({path:'.local/qa/testing-pressure-restored-stopped.png',fullPage:true});
+  await page.reload();
+  await expect(page.locator('.delivery-task-card')).toHaveCount(1);
+  await nav(page,'压力测试');
+  await expect(page.getByLabel('目标并发',{exact:true})).toHaveValue('20');
+  await expect(page.getByLabel('持续时长',{exact:true})).toHaveValue('10');
+  await expect(page.locator('.trend-chart .chart-cursor')).toHaveCount(2);
+  await expect(page.locator('.event-strip')).toContainText('手动');
+});

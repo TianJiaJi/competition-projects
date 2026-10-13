@@ -1,0 +1,11 @@
+.approval-entry { margin:20px 0 24px; padding:20px; border:1px solid var(--line); border-radius:18px; background:var(--surface); }
+.approval-entry .card-title { display:block; margin-bottom:7px; font-size:20px; }
+.approval-entry .tiny { display:block; line-height:1.7; }
+.approval-entry-actions { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:17px; }
+.mobile-root .approval-entry-actions :is(button,uni-button) { display:flex; justify-content:space-between; align-items:center; padding:13px 14px; margin:0; border:1px solid var(--line); border-radius:11px; background:var(--canvas); color:var(--brand); font-size:14px; line-height:1.5; }
+.record-category-tabs { display:flex; gap:7px; margin:18px 0 12px; padding:5px; border-radius:13px; background:var(--surface); border:1px solid var(--line); }
+.mobile-root .record-category-tabs :is(button,uni-button) { display:flex; align-items:center; justify-content:center; flex:1; min-width:0; margin:0; padding:11px 4px; border:0; border-radius:9px; font-size:13px; line-height:1.5; background:transparent; color:var(--muted); }
+.mobile-root .record-category-tabs :is(button,uni-button).active { background:var(--brand); color:#fff; }
+.record-category-tabs :is(button,uni-button) :is(text,uni-text) { display:inline; margin-left:5px; font-size:11px; opacity:.75; }
+.record-sort-note { font-size:11px; color:var(--muted); margin:0 0 16px; }
+.service-record .record-updated { display:block; margin:7px 0 10px; font-size:11px; color:var(--muted); }

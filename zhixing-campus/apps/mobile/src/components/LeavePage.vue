@@ -79,7 +79,7 @@ async function submit() {
   try {
     await client.createLeave(input);
     notify("请假申请已提交");
-    navigate("records");
+    navigate("records", "category=leave");
   } catch (cause) { serviceError.value = cause instanceof Error ? cause.message : "提交失败，请重试"; }
   finally { sending.value = false; }
 }
