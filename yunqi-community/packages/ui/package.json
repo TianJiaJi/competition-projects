@@ -1,0 +1,33 @@
+{
+  "name": "@scene/ui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./src/*",
+    "./liquid-glass": "./src/liquid-glass/index.ts",
+    "./scenic": "./src/scenic/index.ts",
+    "./contour": "./src/contour/index.ts",
+    "./scroll": "./src/scroll/index.ts",
+    "./scenic-svg": "./src/scenic-svg/index.ts",
+    "./charts": "./src/charts/index.ts",
+    "./progress": "./src/progress/index.ts",
+    "./record-rack": "./src/record-rack/index.ts",
+    "./scenic-art": "./src/scenic-art/index.ts",
+    "./scenic-art/catalogue": "./src/scenic-art/catalogue.ts",
+    "./scrollbar": "./src/scrollbar/index.ts",
+    "./scrollbar/uni": "./src/scrollbar/uni.ts",
+    "./display": "./src/display/index.ts",
+    "./community": "./src/community/index.ts"
+  },
+  "dependencies": {
+    "@scene/contracts": "workspace:*",
+    "@scene/model": "workspace:*",
+    "lucide-vue-next": "^0.468.0",
+    "@scene/scroll": "workspace:*",
+    "echarts": "^6.0.0"
+  },
+  "peerDependencies": {
+    "vue": "^3.5.21"
+  }
+}

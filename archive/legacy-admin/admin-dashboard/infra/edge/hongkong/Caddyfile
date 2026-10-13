@@ -1,0 +1,10 @@
+{
+	email {$ACME_EMAIL}
+}
+m.starhusk.com, ops.starhusk.com, visitor.starhusk.com, admin.starhusk.com, gate.starhusk.com, demo.starhusk.com {
+	reverse_proxy {$TUNNEL_UPSTREAM} {
+		header_up Host {host}
+		header_up X-Forwarded-Proto https
+		flush_interval -1
+	}
+}

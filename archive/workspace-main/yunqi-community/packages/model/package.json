@@ -1,0 +1,16 @@
+{
+  "name": "@scene/model",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./three": "./src/scene.ts",
+    "./community": "./src/community/index.ts"
+  },
+  "dependencies": {
+    "@scene/contracts": "workspace:*",
+    "three": "^0.180.0",
+    "@scene/scroll": "workspace:*"
+  }
+}

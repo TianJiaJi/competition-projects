@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><title>records-forms</title></head><body>
+<template id="records-forms"><header><h1 data-bind="applicationName">应用名称</h1><nav></nav><span data-bind="identity"></span><button data-action="logout">退出</button></header><main>
+<section data-page="records"><h2>数据列表</h2><form role="search"><label>关键词<input name="query" type="text" required /></label><select name="status" aria-label="状态"><option value="">全部</option></select><button>查询</button></form><table><thead><tr><th>名称</th><th>位置</th><th>类型</th><th>状态</th><th>操作</th></tr></thead><tbody><tr data-repeat="records.records"><td data-bind="title"></td><td data-bind="location"></td><td data-bind="category"></td><td data-bind="status"></td><td><button data-action="detail">查看详情</button></td></tr></tbody></table><p data-if="empty">暂无记录</p></section>
+
+<section data-page="detail"><h2 data-bind="record.title">记录详情</h2><dl><dt>位置</dt><dd data-bind="record.location"></dd><dt>状态</dt><dd data-bind="record.status"></dd><dt>提交人</dt><dd data-bind="record.submitterId"></dd><dt>处理人</dt><dd data-bind="record.assigneeId"></dd><dt>处理结果</dt><dd data-bind="record.result"></dd></dl><p data-bind="record.description"></p></section>
+
+<form data-page="editor"><h2>维护记录</h2><label>title<input name="title" type="text" required /></label><label>location<input name="location" type="text" required /></label><label>category<input name="category" type="text" required /></label><label>status<input name="status" type="text" required /></label><label>date<input name="date" type="date" required /></label><label>buildingId<input name="buildingId" type="text" required /></label><label>facilityId<input name="facilityId" type="text" required /></label><label>submitterId<input name="submitterId" type="text" required /></label><label>assigneeId<input name="assigneeId" type="text" required /></label><label>timeSlot<input name="timeSlot" type="text" required /></label><label>count<input name="count" type="number" required /></label><label>说明<textarea name="description" required></textarea></label><label>处理结果<textarea name="result"></textarea></label><button type="submit">保存</button><button type="button" data-action="cancel-edit">取消</button><p role="alert" data-bind="error"></p></form>
+
+<nav aria-label="分页"><button data-action="previous">上一页</button><output data-bind="page"></output><button data-action="next">下一页</button></nav>
+</main><p role="status" data-bind="feedback"></p></template>
+</body></html>

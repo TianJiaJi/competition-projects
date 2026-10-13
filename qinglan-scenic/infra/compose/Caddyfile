@@ -1,0 +1,74 @@
+{
+	auto_https off
+}
+http://mobile.localhost:8080 {
+	@backend path /api /api/* /ws /ws/*
+	handle @backend {
+		reverse_proxy server:8787 {
+			flush_interval -1
+		}
+	}
+	handle {
+		reverse_proxy mobile:8080
+	}
+}
+
+http://ops.localhost:8080 {
+	@backend path /api /api/* /ws /ws/*
+	handle @backend {
+		reverse_proxy server:8787 {
+			flush_interval -1
+		}
+	}
+	handle {
+		reverse_proxy ops:8080
+	}
+}
+
+http://visitor.localhost:8080 {
+	@backend path /api /api/* /ws /ws/*
+	handle @backend {
+		reverse_proxy server:8787 {
+			flush_interval -1
+		}
+	}
+	handle {
+		reverse_proxy visitor:8080
+	}
+}
+
+http://admin.localhost:8080 {
+	@backend path /api /api/* /ws /ws/*
+	handle @backend {
+		reverse_proxy server:8787 {
+			flush_interval -1
+		}
+	}
+	handle {
+		reverse_proxy admin:8080
+	}
+}
+
+http://gate.localhost:8080 {
+	@backend path /api /api/* /ws /ws/*
+	handle @backend {
+		reverse_proxy server:8787 {
+			flush_interval -1
+		}
+	}
+	handle {
+		reverse_proxy gate:8080
+	}
+}
+
+http://demo.localhost:8080 {
+	@backend path /api /api/* /ws /ws/*
+	handle @backend {
+		reverse_proxy server:8787 {
+			flush_interval -1
+		}
+	}
+	handle {
+		reverse_proxy demo:8080
+	}
+}

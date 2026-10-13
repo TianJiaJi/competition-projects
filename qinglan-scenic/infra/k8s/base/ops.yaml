@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scenic-ops
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: scenic-ops
+  template:
+    metadata:
+      labels:
+        app: scenic-ops
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+      - name: ops
+        image: scenic/ops:pg-target-dev
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 8080
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: '1'
+            memory: 256Mi
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+          initialDelaySeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: scenic-ops
+spec:
+  selector:
+    app: scenic-ops
+  ports:
+  - name: http
+    port: 8080
+    targetPort: http

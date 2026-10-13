@@ -1,0 +1,21 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: scenic-demo
+resources:
+- ../../base
+- storage.yaml
+images:
+- name: scenic/mobile
+  newTag: pg-target-dev
+- name: scenic/ops
+  newTag: pg-target-dev
+- name: scenic/visitor
+  newTag: pg-target-dev
+- name: scenic/admin
+  newTag: pg-target-dev
+- name: scenic/gate
+  newTag: pg-target-dev
+- name: scenic/demo
+  newTag: pg-target-dev
+- name: scenic/server
+  newTag: pg-target-dev

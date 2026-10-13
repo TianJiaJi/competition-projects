@@ -1,0 +1,156 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: scenic
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-buffering: 'off'
+    nginx.ingress.kubernetes.io/proxy-read-timeout: '3600'
+    nginx.ingress.kubernetes.io/proxy-send-timeout: '3600'
+    nginx.ingress.kubernetes.io/ssl-redirect: 'false'
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: m.starhusk.com
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: scenic-server
+            port:
+              number: 8787
+      - path: /ws
+        pathType: Prefix
+        backend:
+          service:
+            name: scenic-server
+            port:
+              number: 8787
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: scenic-mobile
+            port:
+              number: 8080
+  - host: ops.starhusk.com
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: scenic-server
+            port:
+              number: 8787
+      - path: /ws
+        pathType: Prefix
+        backend:
+          service:
+            name: scenic-server
+            port:
+              number: 8787
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: scenic-ops
+            port:
+              number: 8080
+  - host: visitor.starhusk.com
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: scenic-server
+            port:
+              number: 8787
+      - path: /ws
+        pathType: Prefix
+        backend:
+          service:
+            name: scenic-server
+            port:
+              number: 8787
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: scenic-visitor
+            port:
+              number: 8080
+  - host: admin.starhusk.com
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: scenic-server
+            port:
+              number: 8787
+      - path: /ws
+        pathType: Prefix
+        backend:
+          service:
+            name: scenic-server
+            port:
+              number: 8787
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: scenic-admin
+            port:
+              number: 8080
+  - host: gate.starhusk.com
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: scenic-server
+            port:
+              number: 8787
+      - path: /ws
+        pathType: Prefix
+        backend:
+          service:
+            name: scenic-server
+            port:
+              number: 8787
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: scenic-gate
+            port:
+              number: 8080
+  - host: demo.starhusk.com
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: scenic-server
+            port:
+              number: 8787
+      - path: /ws
+        pathType: Prefix
+        backend:
+          service:
+            name: scenic-server
+            port:
+              number: 8787
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: scenic-demo
+            port:
+              number: 8080

@@ -1,0 +1,72 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "types": [
+      "vite/client",
+      "node"
+    ],
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@scenic/ui/contour": [
+        "packages/ui/src/contour/index.ts"
+      ],
+      "@scenic/ui/liquid-glass": [
+        "packages/ui/src/liquid-glass/index.ts"
+      ],
+      "@scenic/contracts": [
+        "packages/contracts/src/index.ts"
+      ],
+      "@scenic/scenic": [
+        "packages/scenic/src/index.ts"
+      ],
+      "@scenic/scenic/three": [
+        "packages/scenic/src/scene.ts"
+      ],
+      "@scenic/client": [
+        "packages/client/src/index.ts"
+      ],
+      "@scenic/ui/*": [
+        "packages/ui/src/*"
+      ],
+      "@scenic/ui/scenic": [
+        "packages/ui/src/scenic/index.ts"
+      ],
+      "@scenic/scroll": [
+        "packages/scroll/src/index.ts"
+      ],
+      "@scenic/ui/scroll": [
+        "packages/ui/src/scroll/index.ts"
+      ],
+      "@scenic/ui/scenic-svg": [
+        "packages/ui/src/scenic-svg/index.ts"
+      ],
+      "@scenic/ui/charts": [
+        "packages/ui/src/charts/index.ts"
+      ],
+      "@scenic/ui/progress": [
+        "packages/ui/src/progress/index.ts"
+      ]
+    }
+  },
+  "include": [
+    "apps/**/*.ts",
+    "apps/**/*.vue",
+    "packages/**/*.ts",
+    "tests/**/*.ts",
+    "*.ts",
+    "packages/**/*.vue"
+  ]
+}

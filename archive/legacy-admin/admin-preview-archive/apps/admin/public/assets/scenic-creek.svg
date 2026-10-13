@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" role="img" aria-labelledby="t1 d1">
+  <title id="t1">听溪台 · 溪谷示意图</title>
+  <desc id="d1">溪流绕过青石的示意图，用于景点内容演示。</desc>
+  <rect width="640" height="400" fill="#eaf3ef"/>
+  <path d="M0 250 C120 230 180 300 300 280 C420 260 500 320 640 290 L640 400 L0 400 Z" fill="#c8ded4"/>
+  <path d="M0 292 C120 272 200 336 320 312 C440 288 520 344 640 318 L640 400 L0 400 Z" fill="#255d78" opacity="0.55"/>
+  <path d="M40 300 C120 286 190 340 300 320 C400 302 470 348 600 326" stroke="#f8fcfa" stroke-width="6" fill="none" opacity="0.8"/>
+  <g fill="#3c826b" opacity="0.85">
+    <path d="M70 250 l28 -52 l28 52 z"/>
+    <path d="M140 262 l24 -44 l24 44 z"/>
+    <path d="M470 244 l30 -56 l30 56 z"/>
+    <path d="M540 258 l22 -40 l22 40 z"/>
+  </g>
+  <g fill="#193b35">
+    <ellipse cx="230" cy="286" rx="26" ry="12" opacity="0.5"/>
+    <ellipse cx="380" cy="300" rx="20" ry="10" opacity="0.45"/>
+  </g>
+  <text x="24" y="44" font-family="serif" font-size="24" fill="#193b35">听溪台</text>
+  <text x="24" y="70" font-family="sans-serif" font-size="14" fill="#536b63">溪谷示意图（本地自绘 SVG）</text>
+</svg>

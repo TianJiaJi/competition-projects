@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#eaf3ef" />
+    <script>
+      // Apply the saved/system appearance before the app's styles load.
+      (() => {
+        let saved;
+        try { saved = localStorage.getItem("qinglan.admin.appearance"); } catch {}
+        const dark = saved === "dark" || (saved !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.style.backgroundColor = dark ? "#101c1a" : "#f5f4ef";
+        document.documentElement.style.colorScheme = dark ? "dark" : "light";
+      })();
+    </script>
+    <meta name="description" content="青岚山境后台管理：内容、订单配额、设施运行与告警只读查看。" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>青岚山境 · 后台管理</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

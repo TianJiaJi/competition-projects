@@ -1,0 +1,112 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: scenic-postgres
+spec:
+  serviceName: scenic-pg-primary
+  replicas: 1
+  selector:
+    matchLabels:
+      app: scenic-postgres
+      role: primary
+  template:
+    metadata:
+      labels:
+        app: scenic-postgres
+        role: primary
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+      containers:
+      - name: postgres
+        image: postgres:17-bookworm
+        imagePullPolicy: IfNotPresent
+        args:
+        - postgres
+        - -c
+        - ssl=on
+        - -c
+        - ssl_cert_file=/run/secrets/postgres/tls.crt
+        - -c
+        - ssl_key_file=/run/secrets/postgres/tls.key
+        - -c
+        - hba_file=/etc/postgresql/pg_hba.conf
+        - -c
+        - password_encryption=scram-sha-256
+        - -c
+        - ssl_min_protocol_version=TLSv1.2
+        ports:
+        - name: postgres
+          containerPort: 5432
+        envFrom:
+        - secretRef:
+            name: scenic-postgres-secrets
+        env:
+        - name: POSTGRES_INITDB_ARGS
+          value: --auth-host=scram-sha-256 --auth-local=trust
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: '1'
+            memory: 1Gi
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+          subPath: pgdata
+        - name: postgres-tls
+          mountPath: /run/secrets/postgres
+          readOnly: true
+        - name: postgres-config
+          mountPath: /etc/postgresql
+          readOnly: true
+        - name: postgres-init
+          mountPath: /docker-entrypoint-initdb.d
+          readOnly: true
+        startupProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -ec
+            - pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+          failureThreshold: 30
+          periodSeconds: 5
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -ec
+            - pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+          periodSeconds: 5
+          timeoutSeconds: 3
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -ec
+            - pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 3
+      volumes:
+      - name: postgres-tls
+        secret:
+          secretName: scenic-postgres-server-tls
+          defaultMode: 0440
+      - name: postgres-config
+        configMap:
+          name: scenic-postgres-config
+      - name: postgres-init
+        configMap:
+          name: scenic-postgres-init
+          defaultMode: 0555
+      - name: data
+        persistentVolumeClaim:
+          claimName: scenic-pg-primary

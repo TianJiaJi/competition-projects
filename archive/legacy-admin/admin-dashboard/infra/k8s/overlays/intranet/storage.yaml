@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: scenic-pg-primary
+spec:
+  capacity:
+    storage: 10Gi
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ''
+  local:
+    path: /REPLACE_BEFORE_APPLY/scenic/pg-primary
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - replace-primary-node
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: scenic-pg-primary
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: ''
+  volumeName: scenic-pg-primary
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: scenic-pg-standby
+spec:
+  capacity:
+    storage: 10Gi
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ''
+  local:
+    path: /REPLACE_BEFORE_APPLY/scenic/pg-standby
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - replace-standby-node
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: scenic-pg-standby
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: ''
+  volumeName: scenic-pg-standby
+  resources:
+    requests:
+      storage: 10Gi

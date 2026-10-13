@@ -1,0 +1,4 @@
+import type {Task} from '../../../../packages/contracts/src/platform.ts';
+import type {PublicSnapshot} from '../../../../packages/contracts/src/index.ts';
+const regionNames=['入口服务区','溪谷区','竹林区','峡谷观景区','山顶观景区','湖畔游览区','林间休息区','瀑布游览区','公共通行区'];
+export function visitorNotice(task:Task,snapshot:PublicSnapshot){const name=task.anchorId.startsWith('region-')?regionNames[Number(task.regionId.slice(1))]||'该区域':task.location;switch(task.category){case 'crowd':return {title:`${name}游览提醒`,body:`${name}目前较拥挤，建议错峰前往，或先游览其他开放景点。请沿开放步道通行。`};case 'parking':return {title:`${name}停车提醒`,body:`${name}车位较紧张，请先查看其他停车场的当前余位，再选择停车位置。预约不保留实体车位。`};case 'cable':{const wait=snapshot.points[task.anchorId]?.cable?.waitMinutes;return {title:`${name}候乘提醒`,body:`${name}候乘人数较多${wait==null?'':`，预计等待约${Math.ceil(wait)}分钟`}。可稍后乘坐，或查看当前开放的步行路线。`};}case 'restroom':return {title:`${name}使用提醒`,body:`${name}使用人数较多，可能需要排队。您可以在导览中查看附近其他开放卫生间。`};default:return {title:task.title,body:task.reason};}}

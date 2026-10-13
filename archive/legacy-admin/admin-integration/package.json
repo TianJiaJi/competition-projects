@@ -1,0 +1,33 @@
+{
+  "name": "qinglan-scenic-workspace",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.17.1",
+  "scripts": {
+    "dev:ui": "vite --config packages/ui/examples/vite.config.ts",
+    "build:ui": "vite build --config packages/ui/examples/vite.config.ts",
+    "test:ui": "playwright test --config playwright.ui.config.ts",
+    "dev": "pnpm --filter @scenic/visitor dev",
+    "build": "pnpm --filter @scenic/visitor build",
+    "typecheck": "vue-tsc --noEmit",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "dev:ops": "pnpm --filter @scenic/ops dev",
+    "build:ops": "pnpm --filter @scenic/ops build",
+    "test:ops": "playwright test --config playwright.ops.config.ts",
+    "dev:admin": "pnpm --filter @scenic/admin dev",
+    "build:admin": "pnpm --filter @scenic/admin build",
+    "test:admin": "vitest run --config apps/admin/vitest.config.ts && playwright test --config playwright.admin.config.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "@types/node": "^24.3.0",
+    "@types/qrcode": "^1.5.5",
+    "@types/three": "^0.180.0",
+    "@vitejs/plugin-vue": "^6.0.1",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.5",
+    "vitest": "^3.2.4",
+    "vue-tsc": "^3.0.6"
+  }
+}

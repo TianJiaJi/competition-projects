@@ -1,0 +1,3374 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "前线处置与 OA 专项接口",
+    "version": "1.0.0",
+    "description": "设计契约，业务后端尚未实现。本地前端使用独立 Mock。任务字段兼容 OpsAlert，但使用专项路径，不覆盖旧 ops 接口。审批仅管理员可用；本地演示审批不是 HTTP API。"
+  },
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "staffSession": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "scenic_session",
+        "description": "服务端签发的 HttpOnly 会话；对外部署使用 Secure、SameSite=Lax，写操作验证 Origin/CSRF。"
+      }
+    },
+    "schemas": {
+      "Employee": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "TaskStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "processing",
+          "resolved"
+        ]
+      },
+      "Severity": {
+        "type": "string",
+        "enum": [
+          "critical",
+          "important",
+          "reminder"
+        ]
+      },
+      "Category": {
+        "type": "string",
+        "enum": [
+          "crowd",
+          "parking",
+          "cable",
+          "restroom",
+          "equipment",
+          "help",
+          "cleaning",
+          "inspection"
+        ]
+      },
+      "OAType": {
+        "type": "string",
+        "enum": [
+          "reinforcement",
+          "cordon",
+          "supplies",
+          "other"
+        ]
+      },
+      "OAStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "approved",
+          "rejected",
+          "withdrawn"
+        ]
+      },
+      "HandlingRecord": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "created",
+              "started",
+              "completed"
+            ]
+          },
+          "actor": {
+            "type": "string",
+            "minLength": 1
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "at",
+          "kind",
+          "actor",
+          "text"
+        ]
+      },
+      "Task": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "runId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "anchorId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "regionId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "category": {
+            "$ref": "#/components/schemas/Category"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/Severity"
+          },
+          "status": {
+            "$ref": "#/components/schemas/TaskStatus"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "location": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "metric": {
+            "type": "string",
+            "minLength": 1
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "事件发生时间，沿用 OpsAlert。"
+          },
+          "records": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HandlingRecord"
+            }
+          },
+          "previousAlertId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "assignee": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Employee"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "handlingStartedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "completedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "runId",
+          "version",
+          "anchorId",
+          "regionId",
+          "category",
+          "severity",
+          "status",
+          "title",
+          "location",
+          "reason",
+          "metric",
+          "startedAt",
+          "records",
+          "assignee",
+          "handlingStartedAt",
+          "completedAt"
+        ]
+      },
+      "OARecord": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "submitted",
+              "approved",
+              "rejected",
+              "withdrawn"
+            ]
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "actor": {
+            "$ref": "#/components/schemas/Employee"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "kind",
+          "at",
+          "actor",
+          "text"
+        ]
+      },
+      "Decision": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "actor": {
+            "$ref": "#/components/schemas/Employee"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "opinion": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "actor",
+          "at",
+          "opinion"
+        ]
+      },
+      "OARequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "runId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "taskId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "taskTitle": {
+            "type": "string",
+            "minLength": 1
+          },
+          "type": {
+            "$ref": "#/components/schemas/OAType"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "needs": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "status": {
+            "$ref": "#/components/schemas/OAStatus"
+          },
+          "applicant": {
+            "$ref": "#/components/schemas/Employee"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "decision": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Decision"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "records": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OARecord"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "runId",
+          "taskId",
+          "taskTitle",
+          "type",
+          "reason",
+          "needs",
+          "status",
+          "applicant",
+          "createdAt",
+          "updatedAt",
+          "version",
+          "decision",
+          "records"
+        ]
+      },
+      "Meta": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "runId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "requestId"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "AUTH_REQUIRED",
+                  "AUTH_INVALID",
+                  "FORBIDDEN",
+                  "NOT_FOUND",
+                  "RUN_EXPIRED",
+                  "VALIDATION_ERROR",
+                  "VERSION_CONFLICT",
+                  "TASK_STATE_CONFLICT",
+                  "OA_STATE_CONFLICT",
+                  "OA_PENDING",
+                  "IDEMPOTENCY_CONFLICT",
+                  "SERVICE_UNAVAILABLE"
+                ]
+              },
+              "message": {
+                "type": "string",
+                "minLength": 1
+              },
+              "fieldErrors": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "field": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "message": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "field",
+                    "message"
+                  ]
+                }
+              },
+              "details": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "error",
+          "meta"
+        ]
+      },
+      "LoginInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "username": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ]
+      },
+      "Session": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "employee": {
+            "$ref": "#/components/schemas/Employee"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "frontline:read",
+                "frontline:handle",
+                "oa:approve"
+              ]
+            }
+          }
+        },
+        "required": [
+          "employee",
+          "expiresAt",
+          "capabilities"
+        ]
+      },
+      "VersionInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "expectedVersion"
+        ]
+      },
+      "CompletionInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "result": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "result"
+        ]
+      },
+      "CreateOAInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "关联任务版本。"
+          },
+          "type": {
+            "$ref": "#/components/schemas/OAType"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "needs": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "type",
+          "reason",
+          "needs"
+        ]
+      },
+      "DecisionInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "申请版本。"
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "approved",
+              "rejected"
+            ]
+          },
+          "opinion": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "expectedVersion",
+          "decision",
+          "opinion"
+        ]
+      },
+      "Receipt": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "request": {
+            "$ref": "#/components/schemas/OARequest"
+          },
+          "task": {
+            "$ref": "#/components/schemas/Task"
+          }
+        },
+        "required": [
+          "request",
+          "task"
+        ]
+      },
+      "TaskPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Task"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "pageSize"
+        ]
+      },
+      "OAPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OARequest"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "pageSize"
+        ]
+      },
+      "Logout": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "loggedOut": {
+            "const": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "loggedOut"
+        ]
+      },
+      "TaskResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Task"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "SessionResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Session"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "ReceiptResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Receipt"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "TaskPageResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TaskPage"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "OAPageResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OAPage"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "OARequestResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OARequest"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "LogoutResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Logout"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      }
+    }
+  },
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "operationId": "frontlineLogin",
+        "summary": "员工登录",
+        "x-required-capability": "none",
+        "security": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                },
+                "example": {
+                  "data": {
+                    "employee": {
+                      "id": "staff-chen",
+                      "name": "陈越"
+                    },
+                    "expiresAt": "2026-09-14T02:32:00+08:00",
+                    "capabilities": [
+                      "frontline:read",
+                      "frontline:handle"
+                    ]
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请检查填写内容。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "请检查填写内容。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "请重新登录。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "AUTH_REQUIRED",
+                    "message": "请重新登录。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "服务暂时不可用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "SERVICE_UNAVAILABLE",
+                    "message": "服务暂时不可用。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginInput"
+              },
+              "example": {
+                "username": "chen_demo",
+                "password": "GateDemo123!"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "operationId": "frontlineGetSession",
+        "summary": "读取员工会话",
+        "x-required-capability": "frontline:read",
+        "security": [
+          {
+            "staffSession": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                },
+                "example": {
+                  "data": {
+                    "employee": {
+                      "id": "staff-chen",
+                      "name": "陈越"
+                    },
+                    "expiresAt": "2026-09-14T02:32:00+08:00",
+                    "capabilities": [
+                      "frontline:read",
+                      "frontline:handle"
+                    ]
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "请重新登录。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "AUTH_REQUIRED",
+                    "message": "请重新登录。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "服务暂时不可用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "SERVICE_UNAVAILABLE",
+                    "message": "服务暂时不可用。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "operationId": "frontlineLogout",
+        "summary": "退出员工会话",
+        "x-required-capability": "frontline:read",
+        "security": [
+          {
+            "staffSession": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogoutResponse"
+                },
+                "example": {
+                  "data": {
+                    "loggedOut": true
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "请重新登录。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "AUTH_REQUIRED",
+                    "message": "请重新登录。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "服务暂时不可用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "SERVICE_UNAVAILABLE",
+                    "message": "服务暂时不可用。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/frontline/tasks": {
+      "get": {
+        "operationId": "listFrontlineTasks",
+        "summary": "查询任务",
+        "x-required-capability": "frontline:read",
+        "security": [
+          {
+            "staffSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Run-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "example": "run_gate_mock_v1"
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "current",
+                "mine",
+                "history"
+              ],
+              "default": "current"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/TaskStatus"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Category"
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "上海日期，包含当天；history 按完成日期，其余按发生日期。"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "包含当天，不能早于 from。"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "example": 1
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            },
+            "example": 20
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskPageResponse"
+                },
+                "example": {
+                  "data": {
+                    "items": [
+                      {
+                        "id": "task-1",
+                        "runId": "run_gate_mock_v1",
+                        "version": 2,
+                        "anchorId": "lake",
+                        "regionId": "Z5",
+                        "category": "crowd",
+                        "severity": "critical",
+                        "status": "processing",
+                        "title": "镜湖栈道客流拥堵",
+                        "location": "镜湖栈道 · 临水观景段",
+                        "reason": "观景段游客聚集，双向通行缓慢。",
+                        "metric": "区域承载率 92%",
+                        "startedAt": "2026-09-13T14:26:00+08:00",
+                        "records": [
+                          {
+                            "kind": "created",
+                            "at": "2026-09-13T14:26:00+08:00",
+                            "actor": "现场监测",
+                            "text": "观景段游客聚集，双向通行缓慢。"
+                          },
+                          {
+                            "kind": "started",
+                            "at": "2026-09-13T14:32:00+08:00",
+                            "actor": "陈越",
+                            "text": "开始处理"
+                          }
+                        ],
+                        "assignee": {
+                          "id": "staff-chen",
+                          "name": "陈越"
+                        },
+                        "handlingStartedAt": "2026-09-13T14:32:00+08:00",
+                        "completedAt": null
+                      }
+                    ],
+                    "total": 1,
+                    "page": 1,
+                    "pageSize": 20
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请检查填写内容。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "请检查填写内容。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "请重新登录。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "AUTH_REQUIRED",
+                    "message": "请重新登录。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "无权执行此操作。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "无权执行此操作。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "当前运行已失效。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "RUN_EXPIRED",
+                    "message": "当前运行已失效。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "服务暂时不可用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "SERVICE_UNAVAILABLE",
+                    "message": "服务暂时不可用。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/frontline/tasks/{taskId}": {
+      "get": {
+        "operationId": "getFrontlineTask",
+        "summary": "读取任务详情",
+        "x-required-capability": "frontline:read",
+        "security": [
+          {
+            "staffSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Run-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "example": "run_gate_mock_v1"
+          },
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "example": "task-1"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponse"
+                },
+                "example": {
+                  "data": {
+                    "id": "task-1",
+                    "runId": "run_gate_mock_v1",
+                    "version": 2,
+                    "anchorId": "lake",
+                    "regionId": "Z5",
+                    "category": "crowd",
+                    "severity": "critical",
+                    "status": "processing",
+                    "title": "镜湖栈道客流拥堵",
+                    "location": "镜湖栈道 · 临水观景段",
+                    "reason": "观景段游客聚集，双向通行缓慢。",
+                    "metric": "区域承载率 92%",
+                    "startedAt": "2026-09-13T14:26:00+08:00",
+                    "records": [
+                      {
+                        "kind": "created",
+                        "at": "2026-09-13T14:26:00+08:00",
+                        "actor": "现场监测",
+                        "text": "观景段游客聚集，双向通行缓慢。"
+                      },
+                      {
+                        "kind": "started",
+                        "at": "2026-09-13T14:32:00+08:00",
+                        "actor": "陈越",
+                        "text": "开始处理"
+                      }
+                    ],
+                    "assignee": {
+                      "id": "staff-chen",
+                      "name": "陈越"
+                    },
+                    "handlingStartedAt": "2026-09-13T14:32:00+08:00",
+                    "completedAt": null
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "请重新登录。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "AUTH_REQUIRED",
+                    "message": "请重新登录。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "无权执行此操作。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "无权执行此操作。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "记录不存在。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "NOT_FOUND",
+                    "message": "记录不存在。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "当前运行已失效。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "RUN_EXPIRED",
+                    "message": "当前运行已失效。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "服务暂时不可用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "SERVICE_UNAVAILABLE",
+                    "message": "服务暂时不可用。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/frontline/tasks/{taskId}/start": {
+      "post": {
+        "operationId": "startFrontlineTask",
+        "summary": "开始处理并成为负责人",
+        "x-required-capability": "frontline:handle",
+        "security": [
+          {
+            "staffSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Run-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "example": "run_gate_mock_v1"
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128
+            },
+            "example": "command-0001"
+          },
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "example": "task-1"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponse"
+                },
+                "example": {
+                  "data": {
+                    "id": "task-1",
+                    "runId": "run_gate_mock_v1",
+                    "version": 2,
+                    "anchorId": "lake",
+                    "regionId": "Z5",
+                    "category": "crowd",
+                    "severity": "critical",
+                    "status": "processing",
+                    "title": "镜湖栈道客流拥堵",
+                    "location": "镜湖栈道 · 临水观景段",
+                    "reason": "观景段游客聚集，双向通行缓慢。",
+                    "metric": "区域承载率 92%",
+                    "startedAt": "2026-09-13T14:26:00+08:00",
+                    "records": [
+                      {
+                        "kind": "created",
+                        "at": "2026-09-13T14:26:00+08:00",
+                        "actor": "现场监测",
+                        "text": "观景段游客聚集，双向通行缓慢。"
+                      },
+                      {
+                        "kind": "started",
+                        "at": "2026-09-13T14:32:00+08:00",
+                        "actor": "陈越",
+                        "text": "开始处理"
+                      }
+                    ],
+                    "assignee": {
+                      "id": "staff-chen",
+                      "name": "陈越"
+                    },
+                    "handlingStartedAt": "2026-09-13T14:32:00+08:00",
+                    "completedAt": null
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请检查填写内容。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "请检查填写内容。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "请重新登录。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "AUTH_REQUIRED",
+                    "message": "请重新登录。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "无权执行此操作。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "无权执行此操作。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "记录不存在。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "NOT_FOUND",
+                    "message": "记录不存在。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "记录已变化，请重新加载。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "VERSION_CONFLICT",
+                    "message": "记录已变化，请重新加载。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "当前运行已失效。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "RUN_EXPIRED",
+                    "message": "当前运行已失效。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "服务暂时不可用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "SERVICE_UNAVAILABLE",
+                    "message": "服务暂时不可用。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VersionInput"
+              },
+              "example": {
+                "expectedVersion": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    "/frontline/tasks/{taskId}/complete": {
+      "post": {
+        "operationId": "completeFrontlineTask",
+        "summary": "提交结果并结案",
+        "x-required-capability": "frontline:handle",
+        "security": [
+          {
+            "staffSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Run-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "example": "run_gate_mock_v1"
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128
+            },
+            "example": "command-0001"
+          },
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "example": "task-1"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponse"
+                },
+                "example": {
+                  "data": {
+                    "id": "task-1",
+                    "runId": "run_gate_mock_v1",
+                    "version": 3,
+                    "anchorId": "lake",
+                    "regionId": "Z5",
+                    "category": "crowd",
+                    "severity": "critical",
+                    "status": "resolved",
+                    "title": "镜湖栈道客流拥堵",
+                    "location": "镜湖栈道 · 临水观景段",
+                    "reason": "观景段游客聚集，双向通行缓慢。",
+                    "metric": "区域承载率 92%",
+                    "startedAt": "2026-09-13T14:26:00+08:00",
+                    "records": [
+                      {
+                        "kind": "created",
+                        "at": "2026-09-13T14:26:00+08:00",
+                        "actor": "现场监测",
+                        "text": "观景段游客聚集，双向通行缓慢。"
+                      },
+                      {
+                        "kind": "started",
+                        "at": "2026-09-13T14:32:00+08:00",
+                        "actor": "陈越",
+                        "text": "开始处理"
+                      },
+                      {
+                        "kind": "completed",
+                        "at": "2026-09-13T14:32:00+08:00",
+                        "actor": "陈越",
+                        "text": "已完成现场疏导。"
+                      }
+                    ],
+                    "assignee": {
+                      "id": "staff-chen",
+                      "name": "陈越"
+                    },
+                    "handlingStartedAt": "2026-09-13T14:32:00+08:00",
+                    "completedAt": "2026-09-13T14:32:00+08:00"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请检查填写内容。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "请检查填写内容。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "请重新登录。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "AUTH_REQUIRED",
+                    "message": "请重新登录。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "无权执行此操作。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "无权执行此操作。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "记录不存在。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "NOT_FOUND",
+                    "message": "记录不存在。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "记录已变化，请重新加载。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "VERSION_CONFLICT",
+                    "message": "记录已变化，请重新加载。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "当前运行已失效。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "RUN_EXPIRED",
+                    "message": "当前运行已失效。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "服务暂时不可用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "SERVICE_UNAVAILABLE",
+                    "message": "服务暂时不可用。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompletionInput"
+              },
+              "example": {
+                "expectedVersion": 2,
+                "result": "已完成现场疏导。"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/frontline/tasks/{taskId}/oa-requests": {
+      "post": {
+        "operationId": "createFrontlineOA",
+        "summary": "创建协同申请",
+        "x-required-capability": "frontline:handle",
+        "security": [
+          {
+            "staffSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Run-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "example": "run_gate_mock_v1"
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128
+            },
+            "example": "command-0001"
+          },
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "example": "task-1"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceiptResponse"
+                },
+                "example": {
+                  "data": {
+                    "request": {
+                      "id": "oa-001",
+                      "runId": "run_gate_mock_v1",
+                      "taskId": "task-1",
+                      "taskTitle": "镜湖栈道客流拥堵",
+                      "type": "reinforcement",
+                      "reason": "现场人手不足",
+                      "needs": "两名安保协助疏导",
+                      "status": "pending",
+                      "applicant": {
+                        "id": "staff-chen",
+                        "name": "陈越"
+                      },
+                      "createdAt": "2026-09-13T14:32:00+08:00",
+                      "updatedAt": "2026-09-13T14:32:00+08:00",
+                      "version": 1,
+                      "decision": null,
+                      "records": [
+                        {
+                          "kind": "submitted",
+                          "at": "2026-09-13T14:32:00+08:00",
+                          "actor": {
+                            "id": "staff-chen",
+                            "name": "陈越"
+                          },
+                          "text": "提交协同申请"
+                        }
+                      ]
+                    },
+                    "task": {
+                      "id": "task-1",
+                      "runId": "run_gate_mock_v1",
+                      "version": 3,
+                      "anchorId": "lake",
+                      "regionId": "Z5",
+                      "category": "crowd",
+                      "severity": "critical",
+                      "status": "processing",
+                      "title": "镜湖栈道客流拥堵",
+                      "location": "镜湖栈道 · 临水观景段",
+                      "reason": "观景段游客聚集，双向通行缓慢。",
+                      "metric": "区域承载率 92%",
+                      "startedAt": "2026-09-13T14:26:00+08:00",
+                      "records": [
+                        {
+                          "kind": "created",
+                          "at": "2026-09-13T14:26:00+08:00",
+                          "actor": "现场监测",
+                          "text": "观景段游客聚集，双向通行缓慢。"
+                        },
+                        {
+                          "kind": "started",
+                          "at": "2026-09-13T14:32:00+08:00",
+                          "actor": "陈越",
+                          "text": "开始处理"
+                        }
+                      ],
+                      "assignee": {
+                        "id": "staff-chen",
+                        "name": "陈越"
+                      },
+                      "handlingStartedAt": "2026-09-13T14:32:00+08:00",
+                      "completedAt": null
+                    }
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请检查填写内容。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "请检查填写内容。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "请重新登录。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "AUTH_REQUIRED",
+                    "message": "请重新登录。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "无权执行此操作。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "无权执行此操作。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "记录不存在。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "NOT_FOUND",
+                    "message": "记录不存在。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "记录已变化，请重新加载。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "VERSION_CONFLICT",
+                    "message": "记录已变化，请重新加载。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "当前运行已失效。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "RUN_EXPIRED",
+                    "message": "当前运行已失效。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "服务暂时不可用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "SERVICE_UNAVAILABLE",
+                    "message": "服务暂时不可用。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOAInput"
+              },
+              "example": {
+                "expectedVersion": 2,
+                "type": "reinforcement",
+                "reason": "现场人手不足",
+                "needs": "两名安保协助疏导"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/oa-requests": {
+      "get": {
+        "operationId": "listOARequests",
+        "summary": "查询协同申请",
+        "x-required-capability": "frontline:read",
+        "security": [
+          {
+            "staffSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Run-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "example": "run_gate_mock_v1"
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "mine"
+              ],
+              "default": "all"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/OAStatus"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/OAType"
+            }
+          },
+          {
+            "name": "taskId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "applicantId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "description": "匹配关联任务标题、原因和需求。"
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "按申请时间的上海日期，包含当天。"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "包含当天。"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "example": 1
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            },
+            "example": 20
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAPageResponse"
+                },
+                "example": {
+                  "data": {
+                    "items": [
+                      {
+                        "id": "oa-001",
+                        "runId": "run_gate_mock_v1",
+                        "taskId": "task-1",
+                        "taskTitle": "镜湖栈道客流拥堵",
+                        "type": "reinforcement",
+                        "reason": "现场人手不足",
+                        "needs": "两名安保协助疏导",
+                        "status": "pending",
+                        "applicant": {
+                          "id": "staff-chen",
+                          "name": "陈越"
+                        },
+                        "createdAt": "2026-09-13T14:32:00+08:00",
+                        "updatedAt": "2026-09-13T14:32:00+08:00",
+                        "version": 1,
+                        "decision": null,
+                        "records": [
+                          {
+                            "kind": "submitted",
+                            "at": "2026-09-13T14:32:00+08:00",
+                            "actor": {
+                              "id": "staff-chen",
+                              "name": "陈越"
+                            },
+                            "text": "提交协同申请"
+                          }
+                        ]
+                      }
+                    ],
+                    "total": 1,
+                    "page": 1,
+                    "pageSize": 20
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请检查填写内容。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "请检查填写内容。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "请重新登录。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "AUTH_REQUIRED",
+                    "message": "请重新登录。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "无权执行此操作。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "无权执行此操作。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "当前运行已失效。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "RUN_EXPIRED",
+                    "message": "当前运行已失效。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "服务暂时不可用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "SERVICE_UNAVAILABLE",
+                    "message": "服务暂时不可用。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/oa-requests/{oaId}": {
+      "get": {
+        "operationId": "getOARequest",
+        "summary": "读取协同申请",
+        "x-required-capability": "frontline:read",
+        "security": [
+          {
+            "staffSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Run-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "example": "run_gate_mock_v1"
+          },
+          {
+            "name": "oaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "example": "oa-001"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OARequestResponse"
+                },
+                "example": {
+                  "data": {
+                    "id": "oa-001",
+                    "runId": "run_gate_mock_v1",
+                    "taskId": "task-1",
+                    "taskTitle": "镜湖栈道客流拥堵",
+                    "type": "reinforcement",
+                    "reason": "现场人手不足",
+                    "needs": "两名安保协助疏导",
+                    "status": "pending",
+                    "applicant": {
+                      "id": "staff-chen",
+                      "name": "陈越"
+                    },
+                    "createdAt": "2026-09-13T14:32:00+08:00",
+                    "updatedAt": "2026-09-13T14:32:00+08:00",
+                    "version": 1,
+                    "decision": null,
+                    "records": [
+                      {
+                        "kind": "submitted",
+                        "at": "2026-09-13T14:32:00+08:00",
+                        "actor": {
+                          "id": "staff-chen",
+                          "name": "陈越"
+                        },
+                        "text": "提交协同申请"
+                      }
+                    ]
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "请重新登录。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "AUTH_REQUIRED",
+                    "message": "请重新登录。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "无权执行此操作。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "无权执行此操作。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "记录不存在。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "NOT_FOUND",
+                    "message": "记录不存在。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "当前运行已失效。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "RUN_EXPIRED",
+                    "message": "当前运行已失效。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "服务暂时不可用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "SERVICE_UNAVAILABLE",
+                    "message": "服务暂时不可用。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/oa-requests/{oaId}/withdraw": {
+      "post": {
+        "operationId": "withdrawFrontlineOA",
+        "summary": "申请人撤回未决申请",
+        "x-required-capability": "frontline:handle",
+        "security": [
+          {
+            "staffSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Run-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "example": "run_gate_mock_v1"
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128
+            },
+            "example": "command-0001"
+          },
+          {
+            "name": "oaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "example": "oa-001"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceiptResponse"
+                },
+                "example": {
+                  "data": {
+                    "request": {
+                      "id": "oa-001",
+                      "runId": "run_gate_mock_v1",
+                      "taskId": "task-1",
+                      "taskTitle": "镜湖栈道客流拥堵",
+                      "type": "reinforcement",
+                      "reason": "现场人手不足",
+                      "needs": "两名安保协助疏导",
+                      "status": "withdrawn",
+                      "applicant": {
+                        "id": "staff-chen",
+                        "name": "陈越"
+                      },
+                      "createdAt": "2026-09-13T14:32:00+08:00",
+                      "updatedAt": "2026-09-13T14:32:00+08:00",
+                      "version": 2,
+                      "decision": null,
+                      "records": [
+                        {
+                          "kind": "submitted",
+                          "at": "2026-09-13T14:32:00+08:00",
+                          "actor": {
+                            "id": "staff-chen",
+                            "name": "陈越"
+                          },
+                          "text": "提交协同申请"
+                        },
+                        {
+                          "kind": "withdrawn",
+                          "at": "2026-09-13T14:32:00+08:00",
+                          "actor": {
+                            "id": "staff-chen",
+                            "name": "陈越"
+                          },
+                          "text": "申请人撤回"
+                        }
+                      ]
+                    },
+                    "task": {
+                      "id": "task-1",
+                      "runId": "run_gate_mock_v1",
+                      "version": 4,
+                      "anchorId": "lake",
+                      "regionId": "Z5",
+                      "category": "crowd",
+                      "severity": "critical",
+                      "status": "processing",
+                      "title": "镜湖栈道客流拥堵",
+                      "location": "镜湖栈道 · 临水观景段",
+                      "reason": "观景段游客聚集，双向通行缓慢。",
+                      "metric": "区域承载率 92%",
+                      "startedAt": "2026-09-13T14:26:00+08:00",
+                      "records": [
+                        {
+                          "kind": "created",
+                          "at": "2026-09-13T14:26:00+08:00",
+                          "actor": "现场监测",
+                          "text": "观景段游客聚集，双向通行缓慢。"
+                        },
+                        {
+                          "kind": "started",
+                          "at": "2026-09-13T14:32:00+08:00",
+                          "actor": "陈越",
+                          "text": "开始处理"
+                        }
+                      ],
+                      "assignee": {
+                        "id": "staff-chen",
+                        "name": "陈越"
+                      },
+                      "handlingStartedAt": "2026-09-13T14:32:00+08:00",
+                      "completedAt": null
+                    }
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请检查填写内容。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "请检查填写内容。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "请重新登录。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "AUTH_REQUIRED",
+                    "message": "请重新登录。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "无权执行此操作。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "无权执行此操作。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "记录不存在。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "NOT_FOUND",
+                    "message": "记录不存在。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "记录已变化，请重新加载。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "VERSION_CONFLICT",
+                    "message": "记录已变化，请重新加载。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "当前运行已失效。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "RUN_EXPIRED",
+                    "message": "当前运行已失效。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "服务暂时不可用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "SERVICE_UNAVAILABLE",
+                    "message": "服务暂时不可用。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VersionInput"
+              },
+              "example": {
+                "expectedVersion": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/oa-requests/{oaId}/decision": {
+      "post": {
+        "operationId": "decideOARequest",
+        "summary": "管理员批准或驳回申请",
+        "x-required-capability": "oa:approve",
+        "security": [
+          {
+            "staffSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Run-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "example": "run_gate_mock_v1"
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128
+            },
+            "example": "command-0001"
+          },
+          {
+            "name": "oaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "example": "oa-001"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceiptResponse"
+                },
+                "example": {
+                  "data": {
+                    "request": {
+                      "id": "oa-001",
+                      "runId": "run_gate_mock_v1",
+                      "taskId": "task-1",
+                      "taskTitle": "镜湖栈道客流拥堵",
+                      "type": "reinforcement",
+                      "reason": "现场人手不足",
+                      "needs": "两名安保协助疏导",
+                      "status": "approved",
+                      "applicant": {
+                        "id": "staff-chen",
+                        "name": "陈越"
+                      },
+                      "createdAt": "2026-09-13T14:32:00+08:00",
+                      "updatedAt": "2026-09-13T14:32:00+08:00",
+                      "version": 2,
+                      "decision": {
+                        "actor": {
+                          "id": "admin-001",
+                          "name": "值班管理员"
+                        },
+                        "at": "2026-09-13T14:32:00+08:00",
+                        "opinion": "已批准申请，请按安排执行。"
+                      },
+                      "records": [
+                        {
+                          "kind": "submitted",
+                          "at": "2026-09-13T14:32:00+08:00",
+                          "actor": {
+                            "id": "staff-chen",
+                            "name": "陈越"
+                          },
+                          "text": "提交协同申请"
+                        },
+                        {
+                          "kind": "approved",
+                          "at": "2026-09-13T14:32:00+08:00",
+                          "actor": {
+                            "id": "admin-001",
+                            "name": "值班管理员"
+                          },
+                          "text": "已批准申请，请按安排执行。"
+                        }
+                      ]
+                    },
+                    "task": {
+                      "id": "task-1",
+                      "runId": "run_gate_mock_v1",
+                      "version": 4,
+                      "anchorId": "lake",
+                      "regionId": "Z5",
+                      "category": "crowd",
+                      "severity": "critical",
+                      "status": "processing",
+                      "title": "镜湖栈道客流拥堵",
+                      "location": "镜湖栈道 · 临水观景段",
+                      "reason": "观景段游客聚集，双向通行缓慢。",
+                      "metric": "区域承载率 92%",
+                      "startedAt": "2026-09-13T14:26:00+08:00",
+                      "records": [
+                        {
+                          "kind": "created",
+                          "at": "2026-09-13T14:26:00+08:00",
+                          "actor": "现场监测",
+                          "text": "观景段游客聚集，双向通行缓慢。"
+                        },
+                        {
+                          "kind": "started",
+                          "at": "2026-09-13T14:32:00+08:00",
+                          "actor": "陈越",
+                          "text": "开始处理"
+                        }
+                      ],
+                      "assignee": {
+                        "id": "staff-chen",
+                        "name": "陈越"
+                      },
+                      "handlingStartedAt": "2026-09-13T14:32:00+08:00",
+                      "completedAt": null
+                    }
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请检查填写内容。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "请检查填写内容。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "请重新登录。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "AUTH_REQUIRED",
+                    "message": "请重新登录。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "无权执行此操作。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "无权执行此操作。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "记录不存在。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "NOT_FOUND",
+                    "message": "记录不存在。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "记录已变化，请重新加载。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "VERSION_CONFLICT",
+                    "message": "记录已变化，请重新加载。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "当前运行已失效。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "RUN_EXPIRED",
+                    "message": "当前运行已失效。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "服务暂时不可用。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "SERVICE_UNAVAILABLE",
+                    "message": "服务暂时不可用。"
+                  },
+                  "meta": {
+                    "requestId": "request-001",
+                    "runId": "run_gate_mock_v1"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionInput"
+              },
+              "example": {
+                "expectedVersion": 1,
+                "decision": "approved",
+                "opinion": "已批准申请，请按安排执行。"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

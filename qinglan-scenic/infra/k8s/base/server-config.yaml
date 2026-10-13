@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: scenic-server
+data:
+  NODE_ENV: production
+  HOST: 0.0.0.0
+  PORT: '8787'
+  ALLOWED_ORIGINS: https://m.starhusk.com,https://ops.starhusk.com,https://visitor.starhusk.com,https://admin.starhusk.com,https://gate.starhusk.com,https://demo.starhusk.com
+  DEEPSEEK_BASE_URL: https://api.deepseek.com
+  DEEPSEEK_MODEL: deepseek-flash

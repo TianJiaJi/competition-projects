@@ -1,0 +1,26 @@
+name: scenic-hk-edge
+services:
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    ports:
+    - 80:80
+    - 443:443
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL}
+      TUNNEL_UPSTREAM: ${TUNNEL_UPSTREAM:?set container-reachable tunnel endpoint}
+    volumes:
+    - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    - caddy-data:/data
+    - caddy-config:/config
+    networks:
+    - tunnel
+    mem_limit: 256m
+    cpus: 1
+networks:
+  tunnel:
+    external: true
+    name: ${TUNNEL_NETWORK:?set external tunnel network}
+volumes:
+  caddy-data: {}
+  caddy-config: {}

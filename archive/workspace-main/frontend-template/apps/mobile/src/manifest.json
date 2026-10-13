@@ -1,0 +1,25 @@
+{
+  "name": "云栖雅苑",
+  "appid": "",
+  "description": "生活与空间服务",
+  "versionName": "0.1.0",
+  "versionCode": "100",
+  "transformPx": false,
+  "uniStatistics": {
+    "enable": false
+  },
+  "h5": {
+    "title": "云栖雅苑",
+    "router": {
+      "mode": "hash"
+    }
+  },
+  "app-plus": {
+    "usingComponents": true,
+    "distribute": {
+      "android": {
+        "permissions": []
+      }
+    }
+  }
+}

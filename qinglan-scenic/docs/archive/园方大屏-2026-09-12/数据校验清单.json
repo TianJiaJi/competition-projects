@@ -1,0 +1,374 @@
+{
+  "algorithm": "sha256",
+  "files": {
+    "运行场景快照.json": "e399b45da10e45dd49578d76b4c08780fc0fa42ad944fbad11a88b2b810c9cc1",
+    "区域与点位.json": "684e8ab949b0d3c6b7818639ae1a1701c220b327d21bf3e366af9bba5c1a61d0"
+  },
+  "scenarios": [
+    {
+      "id": "alerts",
+      "businessTime": "2026-09-12T14:30:00+08:00",
+      "visitors": 5461,
+      "regionTotal": 5461,
+      "parkingFree": 288,
+      "parkingTotalFree": 288,
+      "currentTrend": {
+        "time": "2026-09-12T14:30:00+08:00",
+        "count": 5461
+      },
+      "active": 7,
+      "criticalActive": 1,
+      "eventCount": 60,
+      "statistics": {
+        "total": 24,
+        "pending": 5,
+        "processing": 2,
+        "resolved": 17,
+        "averageResponseMinutes": 3.5,
+        "averageProcessingMinutes": 13.2,
+        "trend": [
+          {
+            "time": "08:00",
+            "created": 3,
+            "completed": 3
+          },
+          {
+            "time": "09:00",
+            "created": 4,
+            "completed": 3
+          },
+          {
+            "time": "10:00",
+            "created": 3,
+            "completed": 3
+          },
+          {
+            "time": "11:00",
+            "created": 3,
+            "completed": 3
+          },
+          {
+            "time": "12:00",
+            "created": 4,
+            "completed": 3
+          },
+          {
+            "time": "13:00",
+            "created": 0,
+            "completed": 2
+          },
+          {
+            "time": "14:00",
+            "created": 7,
+            "completed": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "normal",
+      "businessTime": "2026-09-12T14:30:00+08:00",
+      "visitors": 5461,
+      "regionTotal": 5461,
+      "parkingFree": 288,
+      "parkingTotalFree": 288,
+      "currentTrend": {
+        "time": "2026-09-12T14:30:00+08:00",
+        "count": 5461
+      },
+      "active": 0,
+      "criticalActive": 0,
+      "eventCount": 72,
+      "statistics": {
+        "total": 24,
+        "pending": 0,
+        "processing": 0,
+        "resolved": 24,
+        "averageResponseMinutes": 5.5,
+        "averageProcessingMinutes": 9.7,
+        "trend": [
+          {
+            "time": "08:00",
+            "created": 3,
+            "completed": 3
+          },
+          {
+            "time": "09:00",
+            "created": 4,
+            "completed": 3
+          },
+          {
+            "time": "10:00",
+            "created": 3,
+            "completed": 3
+          },
+          {
+            "time": "11:00",
+            "created": 3,
+            "completed": 3
+          },
+          {
+            "time": "12:00",
+            "created": 4,
+            "completed": 3
+          },
+          {
+            "time": "13:00",
+            "created": 0,
+            "completed": 2
+          },
+          {
+            "time": "14:00",
+            "created": 7,
+            "completed": 7
+          }
+        ]
+      }
+    },
+    {
+      "id": "processing",
+      "businessTime": "2026-09-12T14:35:00+08:00",
+      "visitors": 5461,
+      "regionTotal": 5461,
+      "parkingFree": 288,
+      "parkingTotalFree": 288,
+      "currentTrend": {
+        "time": "2026-09-12T14:35:00+08:00",
+        "count": 5461
+      },
+      "active": 7,
+      "criticalActive": 1,
+      "eventCount": 61,
+      "statistics": {
+        "total": 24,
+        "pending": 4,
+        "processing": 3,
+        "resolved": 17,
+        "averageResponseMinutes": 3.7,
+        "averageProcessingMinutes": 13.2,
+        "trend": [
+          {
+            "time": "08:00",
+            "created": 3,
+            "completed": 3
+          },
+          {
+            "time": "09:00",
+            "created": 4,
+            "completed": 3
+          },
+          {
+            "time": "10:00",
+            "created": 3,
+            "completed": 3
+          },
+          {
+            "time": "11:00",
+            "created": 3,
+            "completed": 3
+          },
+          {
+            "time": "12:00",
+            "created": 4,
+            "completed": 3
+          },
+          {
+            "time": "13:00",
+            "created": 0,
+            "completed": 2
+          },
+          {
+            "time": "14:00",
+            "created": 7,
+            "completed": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "completed",
+      "businessTime": "2026-09-12T14:45:00+08:00",
+      "visitors": 5461,
+      "regionTotal": 5461,
+      "parkingFree": 288,
+      "parkingTotalFree": 288,
+      "currentTrend": {
+        "time": "2026-09-12T14:45:00+08:00",
+        "count": 5461
+      },
+      "active": 6,
+      "criticalActive": 1,
+      "eventCount": 62,
+      "statistics": {
+        "total": 24,
+        "pending": 4,
+        "processing": 2,
+        "resolved": 18,
+        "averageResponseMinutes": 3.7,
+        "averageProcessingMinutes": 13,
+        "trend": [
+          {
+            "time": "08:00",
+            "created": 3,
+            "completed": 3
+          },
+          {
+            "time": "09:00",
+            "created": 4,
+            "completed": 3
+          },
+          {
+            "time": "10:00",
+            "created": 3,
+            "completed": 3
+          },
+          {
+            "time": "11:00",
+            "created": 3,
+            "completed": 3
+          },
+          {
+            "time": "12:00",
+            "created": 4,
+            "completed": 3
+          },
+          {
+            "time": "13:00",
+            "created": 0,
+            "completed": 2
+          },
+          {
+            "time": "14:00",
+            "created": 7,
+            "completed": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "still-high",
+      "businessTime": "2026-09-12T14:45:00+08:00",
+      "visitors": 5461,
+      "regionTotal": 5461,
+      "parkingFree": 288,
+      "parkingTotalFree": 288,
+      "currentTrend": {
+        "time": "2026-09-12T14:45:00+08:00",
+        "count": 5461
+      },
+      "active": 6,
+      "criticalActive": 1,
+      "eventCount": 62,
+      "statistics": {
+        "total": 24,
+        "pending": 4,
+        "processing": 2,
+        "resolved": 18,
+        "averageResponseMinutes": 3.7,
+        "averageProcessingMinutes": 13,
+        "trend": [
+          {
+            "time": "08:00",
+            "created": 3,
+            "completed": 3
+          },
+          {
+            "time": "09:00",
+            "created": 4,
+            "completed": 3
+          },
+          {
+            "time": "10:00",
+            "created": 3,
+            "completed": 3
+          },
+          {
+            "time": "11:00",
+            "created": 3,
+            "completed": 3
+          },
+          {
+            "time": "12:00",
+            "created": 4,
+            "completed": 3
+          },
+          {
+            "time": "13:00",
+            "created": 0,
+            "completed": 2
+          },
+          {
+            "time": "14:00",
+            "created": 7,
+            "completed": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "recurrence",
+      "businessTime": "2026-09-12T15:10:00+08:00",
+      "visitors": 5461,
+      "regionTotal": 5461,
+      "parkingFree": 288,
+      "parkingTotalFree": 288,
+      "currentTrend": {
+        "time": "2026-09-12T15:10:00+08:00",
+        "count": 5461
+      },
+      "active": 7,
+      "criticalActive": 1,
+      "eventCount": 63,
+      "statistics": {
+        "total": 25,
+        "pending": 5,
+        "processing": 2,
+        "resolved": 18,
+        "averageResponseMinutes": 3.7,
+        "averageProcessingMinutes": 13,
+        "trend": [
+          {
+            "time": "08:00",
+            "created": 3,
+            "completed": 3
+          },
+          {
+            "time": "09:00",
+            "created": 4,
+            "completed": 3
+          },
+          {
+            "time": "10:00",
+            "created": 3,
+            "completed": 3
+          },
+          {
+            "time": "11:00",
+            "created": 3,
+            "completed": 3
+          },
+          {
+            "time": "12:00",
+            "created": 4,
+            "completed": 3
+          },
+          {
+            "time": "13:00",
+            "created": 0,
+            "completed": 2
+          },
+          {
+            "time": "14:00",
+            "created": 7,
+            "completed": 1
+          },
+          {
+            "time": "15:00",
+            "created": 1,
+            "completed": 0
+          }
+        ]
+      }
+    }
+  ]
+}

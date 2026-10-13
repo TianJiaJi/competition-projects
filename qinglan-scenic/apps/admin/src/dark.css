@@ -1,0 +1,162 @@
+/* 后台自己的主题边界，包含 Teleport 到 body 的浮层。 */
+html[data-admin-theme="dark"] { background: #101c1a; }
+.admin-appearance { display: flex; align-items: center; gap: 12px; padding: 8px 4px; font-size: var(--admin-font-small); }
+.admin-appearance label { flex: none; color: var(--muted); }
+.admin-appearance .select { width: auto; flex: 1; min-width: 0; background: transparent; }
+.login-appearance { position: absolute; top: 16px; right: 24px; display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 8px 16px; max-width: calc(100% - 48px); }
+.admin-theme-toggle { flex: none; white-space: nowrap; }
+.admin-header .admin-account__menu { width: 236px; }
+.admin-account__menu .admin-appearance { margin-bottom: 8px; border-bottom: 1px solid var(--admin-line); }
+@media (max-height: 600px) { .login-page { padding-top: 92px; } }
+
+.admin-body[data-theme="dark"] {
+  color-scheme: dark;
+  --canvas: #101c1a;
+  --surface: #192c28;
+  --ink: #e3efe9;
+  --muted: #aabfb5;
+  --brand: #99ddc7;
+  --line: #354e45;
+  --blue: #a7d4ed;
+  --green: #a0dcc1;
+  --gold: #e7c187;
+  --quiet: #a0dcc1;
+  --moderate: #f0c886;
+  --busy: #ffb0a4;
+  --unknown: #bdc9c4;
+  --admin-line: #354e45;
+  --admin-line-strong: #577469;
+  --admin-surface-strong: #1b302b;
+  --admin-hover: #254137;
+  --admin-focus: #a4e8d0;
+  --admin-danger: #ffb0a4;
+  --admin-danger-bg: #432b29;
+  --admin-warning: #f0c886;
+  --admin-warning-bg: #3c3424;
+  --admin-success: #a0dcc1;
+  --admin-success-bg: #203d30;
+  --admin-info: #a7d4ed;
+  --admin-info-bg: #233944;
+  accent-color: #80cbb1;
+}
+
+/* 公共玻璃仍负责材质，深色只更换色彩、高光和阴影参数。 */
+.admin-body[data-theme="dark"] .liquid-glass-material {
+  --glass-tint-rgb: 46 82 69;
+  --glass-text-color: var(--ink);
+  --glass-border: rgb(169 213 190 / .22);
+  --glass-border-bottom: rgb(169 213 190 / .11);
+  --glass-highlight-start: rgb(200 234 217 / .065);
+  --glass-highlight-middle: rgb(200 234 217 / .008);
+  --glass-highlight-end: rgb(200 234 217 / .025);
+  --glass-shadow: inset 0 -1px 0 rgb(0 0 0 / .12), 0 5px 18px rgb(0 0 0 / .20);
+}
+.admin-body[data-theme="dark"] .liquid-glass-button {
+  --glass-tint-rgb: 84 130 111;
+}
+.admin-body[data-theme="dark"] .liquid-glass-button::before {
+  background: linear-gradient(135deg, rgb(196 235 214 / .08), rgb(196 235 214 / .025) 50%, transparent 75%);
+}
+.admin-body[data-theme="dark"] .liquid-glass-button--primary {
+  --glass-text-color: #f4fff9;
+  background-color: rgb(43 113 92 / .92);
+}
+.admin-body[data-theme="dark"] .btn--danger.liquid-glass-material {
+  --glass-text-color: var(--admin-danger);
+  --glass-tint-rgb: 166 74 59;
+  --glass-border: rgb(255 176 164 / .40);
+  --glass-border-bottom: rgb(255 176 164 / .22);
+}
+.admin-body[data-theme="dark"] .btn--ghost.liquid-glass-material { --glass-shadow: inset 0 -1px 0 rgb(0 0 0 / .12), 0 2px 8px rgb(0 0 0 / .12); }
+.admin-body[data-theme="dark"] :is(button, a, summary, select, textarea, input, [tabindex]):focus-visible {
+  outline-color: var(--admin-focus);
+}
+.admin-body[data-theme="dark"] .liquid-glass-button--primary:focus-visible { box-shadow: 0 0 0 6px #101c1a; }
+.admin-body[data-theme="dark"] .liquid-glass-button:disabled { opacity: .60; }
+.admin-body[data-theme="dark"] ::selection { background: #42735f; color: #fff; }
+
+/* 墨青唱片：压低写死的白色反光，保留盘纹与玻璃边缘。 */
+.admin-body[data-theme="dark"] .admin-record-rack :is(.rr-sleeve, .rr-disc) {
+  background: linear-gradient(135deg, rgb(152 212 185 / .09), transparent 60%), rgb(var(--rack-tint) / var(--rack-opacity));
+  box-shadow: var(--rack-shadow), inset 0 1px 0 rgb(177 228 201 / .17);
+}
+.admin-body[data-theme="dark"] .admin-record-rack .rr-disc { background-color: rgb(var(--rack-tint) / var(--rack-disc-opacity)); }
+.admin-body[data-theme="dark"] .admin-record-rack .rr-grooves {
+  background: repeating-radial-gradient(circle, transparent 0 9px, rgb(168 221 195 / .12) 10px, transparent 11px), conic-gradient(from 20deg, transparent, rgb(171 224 197 / .10), transparent 25%, rgb(81 142 120 / .18) 55%, transparent 80%);
+}
+.admin-body[data-theme="dark"] .admin-record-rack .rr-hole { background: rgb(127 188 163 / .12); }
+.admin-body[data-theme="dark"] .admin-record-rack .rr-cover-art { box-shadow: 0 0 0 14px rgb(155 211 184 / .035), 0 0 0 28px rgb(155 211 184 / .035), 0 0 0 42px rgb(155 211 184 / .035); }
+
+/* 表单、浏览器原生控件、错误与自动填充。 */
+.admin-body[data-theme="dark"] :is(.input, .select, textarea.input),
+.admin-body[data-theme="dark"] .scenic-profile :is(.input, .select) {
+  background: rgb(12 28 22 / .38); color: var(--ink);
+  border-color: var(--admin-line-strong); box-shadow: inset 0 1px 0 rgb(205 233 217 / .04);
+  caret-color: var(--admin-focus);
+}
+.admin-body[data-theme="dark"] :is(.input, .select):focus-visible,
+.admin-body[data-theme="dark"] .scenic-profile :is(.input, .select):focus-visible { background: rgb(35 65 50 / .60); }
+.admin-body[data-theme="dark"] :is(.input, .select)[aria-invalid="true"],
+.admin-body[data-theme="dark"] .scenic-profile :is(.input, .select)[aria-invalid="true"] { background: var(--admin-danger-bg); border-color: var(--admin-danger); }
+.admin-body[data-theme="dark"] :is(.input, .select):disabled { background: #1c2c26; color: #91a89b; cursor: not-allowed; }
+.admin-body[data-theme="dark"] input::placeholder,
+.admin-body[data-theme="dark"] textarea::placeholder { color: #95ab9e; opacity: 1; }
+.admin-body[data-theme="dark"] select option { background: #1b302b; color: var(--ink); }
+.admin-body[data-theme="dark"] input:autofill { background-color: #244638; color: var(--ink); }
+.admin-body[data-theme="dark"] input:-webkit-autofill { -webkit-text-fill-color: #e3efe9; box-shadow: inset 0 0 0 1000px #244638; }
+.admin-body[data-theme="dark"] .form-error-banner { border-color: #9e6256; }
+
+/* 表头和状态保留实底，滚过的文字不会穿透。 */
+.admin-body[data-theme="dark"] table.data-table thead th { background: rgb(32 57 45 / .98); }
+.admin-body[data-theme="dark"] table.data-table tbody tr:hover { background: rgb(115 176 143 / .08); }
+.admin-body[data-theme="dark"] .tag { background: #283d32; border-color: #577469; }
+.admin-body[data-theme="dark"] .tag--success { color: var(--admin-success); background: var(--admin-success-bg); border-color: #4b7d62; }
+.admin-body[data-theme="dark"] .tag--warning { color: var(--admin-warning); background: var(--admin-warning-bg); border-color: #8a7048; }
+.admin-body[data-theme="dark"] .tag--danger { color: var(--admin-danger); background: var(--admin-danger-bg); border-color: #9e6256; }
+.admin-body[data-theme="dark"] .tag--info { color: var(--admin-info); background: var(--admin-info-bg); border-color: #51778c; }
+.admin-body[data-theme="dark"] .flow-panel .pager,
+.admin-body[data-theme="dark"] .flow-filter-popup footer,
+.admin-body[data-theme="dark"] .flow-chat .message { border-color: var(--admin-line); }
+.admin-body[data-theme="dark"] .tab.liquid-glass-button,
+.admin-body[data-theme="dark"] .room-button.liquid-glass-button { background-color: rgb(63 104 79 / .14); border-color: rgb(169 213 190 / .22); }
+.admin-body[data-theme="dark"] .tab.liquid-glass-button[aria-selected="true"],
+.admin-body[data-theme="dark"] .room-button.liquid-glass-button[aria-pressed="true"] { background-color: #2d5341; color: #e1f9e9; border-color: #78aa8d; }
+
+/* 阅读与确认浮层使用高遮蔽墨青玻璃；与主面板有明确深浅层次。 */
+.admin-body[data-theme="dark"] :is(.overlay, .modal-overlay, .flow-filter-overlay) { background: rgb(0 9 6 / .56); }
+.admin-body[data-theme="dark"] :is(.flow-overlay .drawer, .flow-modal, .flow-filter-popup, .overview__notes-panel, .admin-account__menu).liquid-glass-material {
+  --glass-tint-rgb: 25 47 40; --glass-text-color: #e3efe9; --muted: #aabfb5;
+  background-color: rgb(var(--glass-tint-rgb) / var(--glass-tint-opacity)); color: var(--ink);
+}
+.admin-body[data-theme="dark"] :is(.drawer__header, .drawer__footer, .modal__header, .modal__footer) { border-color: var(--admin-line); }
+.admin-body[data-theme="dark"] :is(.drawer__footer, .modal__footer) { background: transparent; }
+.admin-body[data-theme="dark"] .markdown-preview { color: var(--ink); background: rgb(14 29 22 / .18); }
+.admin-body[data-theme="dark"] .markdown-preview blockquote,
+.admin-body[data-theme="dark"] .markdown-preview code { background: #223d2e; color: #bdd3c4; }
+.admin-body[data-theme="dark"] .markdown-preview a { text-decoration: underline; text-underline-offset: 3px; }
+.admin-body[data-theme="dark"] .message { background: transparent; }
+.admin-body[data-theme="dark"] .message--removed { color: var(--muted); background: rgb(31 49 38 / .35); }
+.admin-body[data-theme="dark"] .toast { background: #20372a; color: var(--ink); box-shadow: 0 10px 28px rgb(0 0 0 / .32); }
+.admin-body[data-theme="dark"] .toast--success { background: var(--admin-success-bg); color: var(--admin-success); border-color: #4b7d62; }
+.admin-body[data-theme="dark"] .toast--error { background: var(--admin-danger-bg); color: var(--admin-danger); border-color: #9e6256; }
+.admin-body[data-theme="dark"] .toast--info { background: var(--admin-info-bg); color: var(--admin-info); border-color: #51778c; }
+.admin-body[data-theme="dark"] .skeleton-lines span { background: linear-gradient(90deg, #20382a, #2e4c39, #20382a); }
+.admin-body[data-theme="dark"] .bar { background: #304c3b; }
+
+/* 工作台、档案和登录页也使用同一深色语义色。照片和素材保持原色。 */
+.admin-body[data-theme="dark"] .overview__metric-top > svg { color: var(--muted); }
+.admin-body[data-theme="dark"] .overview__list > li { border-color: var(--admin-line); }
+.admin-body[data-theme="dark"] .scenic-profile__cover-empty,
+.admin-body[data-theme="dark"] .scenic-profile__cover-choice { background: rgb(51 87 65 / .20); border-color: var(--admin-line); }
+.admin-body[data-theme="dark"] .scenic-profile__contact { border-color: var(--admin-line); }
+.admin-body[data-theme="dark"] .scenic-profile__selected { background: #367757; color: #f5fff7; }
+.admin-body[data-theme="dark"] .admin-header__logout.liquid-glass-button,
+.admin-body[data-theme="dark"] .admin-account summary.liquid-glass-material { background-color: rgb(68 107 82 / .12); }
+.admin-body[data-theme="dark"] .admin-account__action.liquid-glass-button { background-color: rgb(166 74 59 / .14); color: var(--admin-danger); }
+.admin-body[data-theme="dark"] .login-card { background: rgb(25 44 37 / .94); box-shadow: 0 18px 44px rgb(0 0 0 / .28); }
+
+@media (forced-colors: active) {
+  .admin-body[data-theme="dark"] { --ink: CanvasText; --muted: CanvasText; --brand: LinkText; --admin-focus: Highlight; }
+  .admin-body[data-theme="dark"] :is(.input, .select, .tag, .toast, .panel, .login-card, table.data-table thead th) { background: Canvas; color: CanvasText; border-color: CanvasText; }
+  .admin-body[data-theme="dark"] .admin-record-rack :is(.rr-sleeve, .rr-disc) { background: Canvas; color: CanvasText; border-color: CanvasText; box-shadow: none; }
+}

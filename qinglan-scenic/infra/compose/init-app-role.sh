@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+psql --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" --set=app_password="$APP_POSTGRES_PASSWORD" <<'SQL'
+CREATE ROLE scenic_app LOGIN PASSWORD :'app_password';
+SQL

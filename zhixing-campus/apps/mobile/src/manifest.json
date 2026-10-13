@@ -1,0 +1,25 @@
+{
+  "name": "知行校园",
+  "appid": "",
+  "description": "师生校园服务",
+  "versionName": "0.1.0",
+  "versionCode": "100",
+  "transformPx": false,
+  "uniStatistics": {
+    "enable": false
+  },
+  "h5": {
+    "title": "知行校园",
+    "router": {
+      "mode": "hash"
+    }
+  },
+  "app-plus": {
+    "usingComponents": true,
+    "distribute": {
+      "android": {
+        "permissions": []
+      }
+    }
+  }
+}

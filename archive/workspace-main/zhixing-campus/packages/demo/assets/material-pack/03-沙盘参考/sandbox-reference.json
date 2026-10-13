@@ -1,0 +1,21 @@
+{
+  "model": "campus",
+  "view": "learning",
+  "views": [
+    "overview",
+    "learning",
+    "safety"
+  ],
+  "interactions": [
+    "rotate",
+    "zoom",
+    "building-details",
+    "facility-details"
+  ],
+  "focus": {
+    "buildingId": "B1",
+    "facilityId": "F4"
+  },
+  "coordinates": "../02-设施坐标/M03.json",
+  "reference": "R01-campus.png"
+}

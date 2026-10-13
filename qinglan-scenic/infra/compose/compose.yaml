@@ -1,0 +1,154 @@
+name: scenic-pg-dev
+services:
+  mobile:
+    image: scenic/mobile:${RELEASE_TAG:?set RELEASE_TAG}
+    build:
+      context: ../..
+      dockerfile: infra/images/frontend.Dockerfile
+      args:
+        APP: mobile
+    restart: unless-stopped
+    networks:
+    - app
+    mem_limit: 192m
+    cpus: 0.5
+  ops:
+    image: scenic/ops:${RELEASE_TAG:?set RELEASE_TAG}
+    build:
+      context: ../..
+      dockerfile: infra/images/frontend.Dockerfile
+      args:
+        APP: ops
+    restart: unless-stopped
+    networks:
+    - app
+    mem_limit: 192m
+    cpus: 0.5
+  visitor:
+    image: scenic/visitor:${RELEASE_TAG:?set RELEASE_TAG}
+    build:
+      context: ../..
+      dockerfile: infra/images/frontend.Dockerfile
+      args:
+        APP: visitor
+    restart: unless-stopped
+    networks:
+    - app
+    mem_limit: 192m
+    cpus: 0.5
+  admin:
+    image: scenic/admin:${RELEASE_TAG:?set RELEASE_TAG}
+    build:
+      context: ../..
+      dockerfile: infra/images/frontend.Dockerfile
+      args:
+        APP: admin
+    restart: unless-stopped
+    networks:
+    - app
+    mem_limit: 192m
+    cpus: 0.5
+  gate:
+    image: scenic/gate:${RELEASE_TAG:?set RELEASE_TAG}
+    build:
+      context: ../..
+      dockerfile: infra/images/frontend.Dockerfile
+      args:
+        APP: gate
+    restart: unless-stopped
+    networks:
+    - app
+    mem_limit: 192m
+    cpus: 0.5
+  demo:
+    image: scenic/demo:${RELEASE_TAG:?set RELEASE_TAG}
+    build:
+      context: ../..
+      dockerfile: infra/images/frontend.Dockerfile
+      args:
+        APP: demo
+    restart: unless-stopped
+    networks:
+    - app
+    mem_limit: 192m
+    cpus: 0.5
+  server:
+    image: scenic/server:${RELEASE_TAG:?set RELEASE_TAG}
+    build:
+      context: ../..
+      dockerfile: infra/images/server.Dockerfile
+    restart: 'no'
+    environment:
+      NODE_ENV: production
+      PG_ALLOW_INSECURE: '1'
+      HOST: 0.0.0.0
+      PORT: '8787'
+      DATABASE_URL: postgresql://scenic_app:${APP_POSTGRES_PASSWORD:?set APP_POSTGRES_PASSWORD}@postgres:5432/scenic
+      ALLOWED_ORIGINS: http://mobile.localhost:8080,http://ops.localhost:8080,http://visitor.localhost:8080,http://admin.localhost:8080,http://gate.localhost:8080,http://demo.localhost:8080
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DEEPSEEK_BASE_URL: https://api.deepseek.com
+      DEEPSEEK_MODEL: deepseek-flash
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [app, data]
+    mem_limit: 1g
+    cpus: 2
+  migrate:
+    image: scenic/server:${RELEASE_TAG:?set RELEASE_TAG}
+    profiles: [tools]
+    entrypoint: [node, /app/apps/server/scripts/migrate.ts]
+    environment:
+      DATABASE_URL: postgresql://scenic:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@postgres:5432/scenic
+      PG_ALLOW_INSECURE: '1'
+      PG_APP_ROLE: scenic_app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [data]
+  postgres:
+    image: postgres:17-bookworm
+    environment:
+      APP_POSTGRES_PASSWORD: ${APP_POSTGRES_PASSWORD:?set APP_POSTGRES_PASSWORD}
+      POSTGRES_DB: scenic
+      POSTGRES_USER: scenic
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    volumes:
+    - pg-data:/var/lib/postgresql/data
+    - ./init-app-role.sh:/docker-entrypoint-initdb.d/10-app-role.sh:ro
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - pg_isready -U scenic -d scenic
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    networks:
+    - data
+    mem_limit: 1g
+    cpus: 2
+  gateway:
+    image: caddy:2.10-alpine
+    ports:
+    - 127.0.0.1:${HTTP_PORT:-8080}:8080
+    volumes:
+    - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on:
+    - mobile
+    - ops
+    - visitor
+    - admin
+    - gate
+    - demo
+    - server
+    networks:
+    - app
+    mem_limit: 128m
+    cpus: 0.5
+networks:
+  app: {}
+  data:
+    internal: true
+volumes:
+  pg-data: {}

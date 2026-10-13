@@ -1,0 +1,20 @@
+name: scenic-hk-edge
+services:
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    ports:
+    - 80:80
+    - 443:443
+    environment:
+      TUNNEL_UPSTREAM: ${TUNNEL_UPSTREAM:?set public SakuraFrp relay host and port}
+    volumes:
+    - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    - ./scenic-root.crt:/etc/caddy/scenic-root.crt:ro
+    - caddy-data:/data
+    - caddy-config:/config
+    mem_limit: 256m
+    cpus: 1
+volumes:
+  caddy-data: {}
+  caddy-config: {}

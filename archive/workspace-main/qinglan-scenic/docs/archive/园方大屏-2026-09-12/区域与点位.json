@@ -1,0 +1,529 @@
+{
+  "regions": [
+    {
+      "id": "Z0",
+      "name": "入口服务区",
+      "x": 0,
+      "z": 21,
+      "radius": 10,
+      "capacity": 1000
+    },
+    {
+      "id": "Z1",
+      "name": "溪谷区",
+      "x": 19,
+      "z": 14,
+      "radius": 7,
+      "capacity": 1100
+    },
+    {
+      "id": "Z2",
+      "name": "竹林区",
+      "x": 21,
+      "z": 3,
+      "radius": 7,
+      "capacity": 1100
+    },
+    {
+      "id": "Z3",
+      "name": "峡谷观景区",
+      "x": 18,
+      "z": -6,
+      "radius": 7,
+      "capacity": 1000
+    },
+    {
+      "id": "Z4",
+      "name": "山顶观景区",
+      "x": 4,
+      "z": -15,
+      "radius": 10,
+      "capacity": 1300
+    },
+    {
+      "id": "Z5",
+      "name": "湖畔游览区",
+      "x": -20,
+      "z": 0,
+      "radius": 7,
+      "capacity": 1300
+    },
+    {
+      "id": "Z6",
+      "name": "林间休息区",
+      "x": -18,
+      "z": 10,
+      "radius": 7,
+      "capacity": 1000
+    },
+    {
+      "id": "Z7",
+      "name": "瀑布游览区",
+      "x": -11,
+      "z": -17,
+      "radius": 7,
+      "capacity": 1000
+    },
+    {
+      "id": "Z8",
+      "name": "公共通行区",
+      "x": 0,
+      "z": 1,
+      "radius": 10,
+      "capacity": 2500
+    }
+  ],
+  "points": [
+    {
+      "id": "terminal-entry",
+      "name": "入口广场游客终端",
+      "kind": "terminal",
+      "nodeId": "terminal-entry",
+      "regionId": "Z0",
+      "description": "在此查询景点、设施和路线。从这里出发，沿景区步道开启游览。",
+      "hours": "以现场开放安排为准",
+      "services": [
+        "游客导览"
+      ]
+    },
+    {
+      "id": "terminal-bamboo",
+      "name": "竹间驿游客终端",
+      "kind": "terminal",
+      "nodeId": "terminal-bamboo",
+      "regionId": "Z2",
+      "description": "在此查询景点、设施和路线。从这里出发，沿景区步道开启游览。",
+      "hours": "以现场开放安排为准",
+      "services": [
+        "游客导览"
+      ]
+    },
+    {
+      "id": "terminal-summit",
+      "name": "山顶平台游客终端",
+      "kind": "terminal",
+      "nodeId": "terminal-summit",
+      "regionId": "Z4",
+      "description": "在此查询景点、设施和路线。从这里出发，沿景区步道开启游览。",
+      "hours": "以现场开放安排为准",
+      "services": [
+        "游客导览"
+      ]
+    },
+    {
+      "id": "terminal-market",
+      "name": "归云集游客终端",
+      "kind": "terminal",
+      "nodeId": "terminal-market",
+      "regionId": "Z0",
+      "description": "在此查询景点、设施和路线。从这里出发，沿景区步道开启游览。",
+      "hours": "以现场开放安排为准",
+      "services": [
+        "游客导览"
+      ]
+    },
+    {
+      "id": "aed-entry",
+      "name": "入口 AED",
+      "kind": "safety",
+      "nodeId": "aed-entry",
+      "regionId": "Z0",
+      "description": "AED所在位置，请按现场标识及工作人员指引使用。",
+      "hours": "以现场开放安排为准",
+      "services": [
+        "AED"
+      ],
+      "safetyKind": "aed"
+    },
+    {
+      "id": "aed-summit",
+      "name": "山顶 AED",
+      "kind": "safety",
+      "nodeId": "aed-summit",
+      "regionId": "Z4",
+      "description": "AED所在位置，请按现场标识及工作人员指引使用。",
+      "hours": "以现场开放安排为准",
+      "services": [
+        "AED"
+      ],
+      "safetyKind": "aed"
+    },
+    {
+      "id": "aid-entry",
+      "name": "入口急救点",
+      "kind": "safety",
+      "nodeId": "aid-entry",
+      "regionId": "Z0",
+      "description": "急救点所在位置，请按现场标识及工作人员指引使用。",
+      "hours": "以现场开放安排为准",
+      "services": [
+        "急救点"
+      ],
+      "safetyKind": "first-aid"
+    },
+    {
+      "id": "aid-bamboo",
+      "name": "竹间驿急救点",
+      "kind": "safety",
+      "nodeId": "aid-bamboo",
+      "regionId": "Z2",
+      "description": "急救点所在位置，请按现场标识及工作人员指引使用。",
+      "hours": "以现场开放安排为准",
+      "services": [
+        "急救点"
+      ],
+      "safetyKind": "first-aid"
+    },
+    {
+      "id": "help-creek",
+      "name": "溪谷一键求助点",
+      "kind": "safety",
+      "nodeId": "help-creek",
+      "regionId": "Z1",
+      "description": "现场一键求助设备的位置。本页面仅展示位置与状态，请前往现场设备使用。",
+      "hours": "以现场开放安排为准",
+      "services": [
+        "一键求助点"
+      ],
+      "safetyKind": "help"
+    },
+    {
+      "id": "help-gorge",
+      "name": "峡谷一键求助点",
+      "kind": "safety",
+      "nodeId": "help-gorge",
+      "regionId": "Z3",
+      "description": "现场一键求助设备的位置。本页面仅展示位置与状态，请前往现场设备使用。",
+      "hours": "以现场开放安排为准",
+      "services": [
+        "一键求助点"
+      ],
+      "safetyKind": "help"
+    },
+    {
+      "id": "help-forest",
+      "name": "林间一键求助点",
+      "kind": "safety",
+      "nodeId": "help-forest",
+      "regionId": "Z6",
+      "description": "现场一键求助设备的位置。本页面仅展示位置与状态，请前往现场设备使用。",
+      "hours": "以现场开放安排为准",
+      "services": [
+        "一键求助点"
+      ],
+      "safetyKind": "help"
+    },
+    {
+      "id": "help-falls",
+      "name": "瀑布一键求助点",
+      "kind": "safety",
+      "nodeId": "help-falls",
+      "regionId": "Z7",
+      "description": "现场一键求助设备的位置。本页面仅展示位置与状态，请前往现场设备使用。",
+      "hours": "以现场开放安排为准",
+      "services": [
+        "一键求助点"
+      ],
+      "safetyKind": "help"
+    },
+    {
+      "id": "ring-creek",
+      "name": "溪谷救生圈",
+      "kind": "safety",
+      "nodeId": "ring-creek",
+      "regionId": "Z1",
+      "description": "救生圈所在位置，请按现场标识及工作人员指引使用。",
+      "hours": "以现场开放安排为准",
+      "services": [
+        "救生圈"
+      ],
+      "safetyKind": "lifebuoy"
+    },
+    {
+      "id": "ring-lake",
+      "name": "湖畔救生圈",
+      "kind": "safety",
+      "nodeId": "ring-lake",
+      "regionId": "Z5",
+      "description": "救生圈所在位置，请按现场标识及工作人员指引使用。",
+      "hours": "以现场开放安排为准",
+      "services": [
+        "救生圈"
+      ],
+      "safetyKind": "lifebuoy"
+    },
+    {
+      "id": "fire-market",
+      "name": "归云集灭火器",
+      "kind": "safety",
+      "nodeId": "fire-market",
+      "regionId": "Z0",
+      "description": "灭火器所在位置，请按现场标识及工作人员指引使用。",
+      "hours": "以现场开放安排为准",
+      "services": [
+        "灭火器"
+      ],
+      "safetyKind": "extinguisher"
+    },
+    {
+      "id": "fire-lower",
+      "name": "索道下站灭火器",
+      "kind": "safety",
+      "nodeId": "fire-lower",
+      "regionId": "Z0",
+      "description": "灭火器所在位置，请按现场标识及工作人员指引使用。",
+      "hours": "以现场开放安排为准",
+      "services": [
+        "灭火器"
+      ],
+      "safetyKind": "extinguisher"
+    },
+    {
+      "id": "fire-bamboo",
+      "name": "竹间驿灭火器",
+      "kind": "safety",
+      "nodeId": "fire-bamboo",
+      "regionId": "Z2",
+      "description": "灭火器所在位置，请按现场标识及工作人员指引使用。",
+      "hours": "以现场开放安排为准",
+      "services": [
+        "灭火器"
+      ],
+      "safetyKind": "extinguisher"
+    },
+    {
+      "id": "shelter-entry",
+      "name": "入口广场应急避难点",
+      "kind": "safety",
+      "nodeId": "shelter-entry",
+      "regionId": "Z0",
+      "description": "应急避难点所在位置，请按现场标识及工作人员指引使用。",
+      "hours": "以现场开放安排为准",
+      "services": [
+        "应急避难点"
+      ],
+      "safetyKind": "shelter"
+    },
+    {
+      "id": "shelter-summit",
+      "name": "山顶平台应急避难点",
+      "kind": "safety",
+      "nodeId": "shelter-summit",
+      "regionId": "Z4",
+      "description": "应急避难点所在位置，请按现场标识及工作人员指引使用。",
+      "hours": "以现场开放安排为准",
+      "services": [
+        "应急避难点"
+      ],
+      "safetyKind": "shelter"
+    },
+    {
+      "id": "entry",
+      "name": "景区入口",
+      "kind": "entrance",
+      "nodeId": "entry",
+      "regionId": "Z0",
+      "description": "从这里走进青岚山境。环形主路串联溪谷、竹林与山顶，沿途支路通往各处景观。",
+      "hours": "08:00—17:00"
+    },
+    {
+      "id": "gate-out",
+      "name": "景区出口",
+      "kind": "entrance",
+      "nodeId": "gate-out",
+      "regionId": "Z0",
+      "description": "返程出口与入园口位于同一广场，附近设有商业区与停车场。",
+      "hours": "08:00—18:00"
+    },
+    {
+      "id": "creek",
+      "name": "听溪台",
+      "kind": "attraction",
+      "nodeId": "creek",
+      "regionId": "Z1",
+      "description": "临溪而筑的木台，能听见水流绕过青石的声音。沿支路缓行，可以近看溪谷与岸边植被。",
+      "hours": "08:00—18:00"
+    },
+    {
+      "id": "bamboo",
+      "name": "竹影幽径",
+      "kind": "attraction",
+      "nodeId": "bamboo",
+      "regionId": "Z2",
+      "description": "细密竹影落在石阶上，林间短径从主路向内延伸，适合停留片刻。",
+      "hours": "08:00—18:00"
+    },
+    {
+      "id": "gorge",
+      "name": "叠翠峡",
+      "kind": "attraction",
+      "nodeId": "gorge",
+      "regionId": "Z3",
+      "description": "两侧层叠石壁夹出一线山色，观景台可眺望峡谷与远山。",
+      "hours": "08:00—18:00"
+    },
+    {
+      "id": "summit",
+      "name": "望岳台",
+      "kind": "attraction",
+      "nodeId": "summit",
+      "regionId": "Z4",
+      "description": "环线最高处，也是游览的最后一站。山峦与湖泊在此展开，可沿山路返程，或前往索道上站下山。",
+      "hours": "08:00—18:00"
+    },
+    {
+      "id": "falls",
+      "name": "飞瀑亭",
+      "kind": "attraction",
+      "nodeId": "falls",
+      "regionId": "Z7",
+      "description": "水流从高处山壁跌落，亭前可看飞瀑入潭。雨后石阶湿滑，请沿开放步道游览。",
+      "hours": "08:00—18:00"
+    },
+    {
+      "id": "lake",
+      "name": "镜湖栈道",
+      "kind": "attraction",
+      "nodeId": "lake",
+      "regionId": "Z5",
+      "description": "沿湖木栈道贴着岸线展开，水中倒映着青山与云影。",
+      "hours": "08:00—18:00"
+    },
+    {
+      "id": "forest",
+      "name": "松风林",
+      "kind": "attraction",
+      "nodeId": "forest",
+      "regionId": "Z6",
+      "description": "林间的缓坡与石凳适合歇脚，松风穿过树冠，是返程前的一处安静停留点。",
+      "hours": "08:00—18:00"
+    },
+    {
+      "id": "market",
+      "name": "归云集 · 出口商业区",
+      "kind": "commercial",
+      "nodeId": "market",
+      "regionId": "Z0",
+      "description": "临近出口的山间小集，提供餐饮、文创和游客服务。返程可在此休息，再步行前往出口。",
+      "hours": "09:00—19:00",
+      "services": [
+        "餐饮",
+        "文创",
+        "游客服务"
+      ]
+    },
+    {
+      "id": "supply",
+      "name": "竹间驿 · 中途补给",
+      "kind": "commercial",
+      "nodeId": "supply",
+      "regionId": "Z2",
+      "description": "主路旁的小型补给与休息点，可补充饮水、购买简餐并稍作休息。",
+      "hours": "09:00—17:30",
+      "services": [
+        "饮水",
+        "简餐",
+        "休息"
+      ]
+    },
+    {
+      "id": "upper",
+      "name": "索道上站",
+      "kind": "cable",
+      "nodeId": "upper",
+      "regionId": "Z4",
+      "description": "从山顶乘索道下行，抵达出口商业区附近。",
+      "hours": "08:00—18:30"
+    },
+    {
+      "id": "lower",
+      "name": "索道下站",
+      "kind": "cable",
+      "nodeId": "lower",
+      "regionId": "Z0",
+      "description": "下行到站后，沿步道前往归云集与景区出口。",
+      "hours": "08:00—18:30"
+    },
+    {
+      "id": "t1",
+      "name": "入口卫生间",
+      "kind": "toilet",
+      "nodeId": "t1",
+      "regionId": "Z0",
+      "description": "位于游览步道旁的公共卫生间，忙闲状态随景区数据更新。",
+      "hours": "08:00—18:00"
+    },
+    {
+      "id": "t2",
+      "name": "溪谷卫生间",
+      "kind": "toilet",
+      "nodeId": "t2",
+      "regionId": "Z1",
+      "description": "位于游览步道旁的公共卫生间，忙闲状态随景区数据更新。",
+      "hours": "08:00—18:00"
+    },
+    {
+      "id": "t3",
+      "name": "峡谷卫生间",
+      "kind": "toilet",
+      "nodeId": "t3",
+      "regionId": "Z3",
+      "description": "位于游览步道旁的公共卫生间，忙闲状态随景区数据更新。",
+      "hours": "08:00—18:00"
+    },
+    {
+      "id": "t4",
+      "name": "山顶卫生间",
+      "kind": "toilet",
+      "nodeId": "t4",
+      "regionId": "Z4",
+      "description": "位于游览步道旁的公共卫生间，忙闲状态随景区数据更新。",
+      "hours": "08:00—18:00"
+    },
+    {
+      "id": "t5",
+      "name": "湖畔卫生间",
+      "kind": "toilet",
+      "nodeId": "t5",
+      "regionId": "Z5",
+      "description": "位于游览步道旁的公共卫生间，忙闲状态随景区数据更新。",
+      "hours": "08:00—18:00"
+    },
+    {
+      "id": "t6",
+      "name": "林间卫生间",
+      "kind": "toilet",
+      "nodeId": "t6",
+      "regionId": "Z6",
+      "description": "位于游览步道旁的公共卫生间，忙闲状态随景区数据更新。",
+      "hours": "08:00—18:00"
+    },
+    {
+      "id": "p1",
+      "name": "一号停车场",
+      "kind": "parking",
+      "nodeId": "p1",
+      "regionId": "Z0",
+      "description": "靠近出口广场的小客车停车场。",
+      "hours": "07:00—19:30"
+    },
+    {
+      "id": "p2",
+      "name": "二号停车场",
+      "kind": "parking",
+      "nodeId": "p2",
+      "regionId": "Z0",
+      "description": "位于入园广场东侧的小客车停车场。",
+      "hours": "07:00—19:30"
+    },
+    {
+      "id": "p3",
+      "name": "三号停车场",
+      "kind": "parking",
+      "nodeId": "p3",
+      "regionId": "Z0",
+      "description": "位于一号停车场西侧的小客车停车场。",
+      "hours": "07:00—19:30"
+    }
+  ]
+}

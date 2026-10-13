@@ -1,0 +1,22 @@
+{
+  "name": "@scenic/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env.local --watch src/index.ts",
+    "start": "node --env-file-if-exists=.env.local src/index.ts",
+    "typecheck": "tsc --noEmit --allowImportingTsExtensions --module nodenext --target es2022 --strict --skipLibCheck src/index.ts",
+    "db:migrate": "node --env-file-if-exists=.env.local scripts/migrate.ts",
+    "db:import": "node --env-file-if-exists=.env.local scripts/import-sqlite.ts",
+    "db:seed-demo": "node --env-file-if-exists=.env.local scripts/seed-demo.ts"
+  },
+  "dependencies": {
+    "pg": "^8.23.0",
+    "ws": "^8.21.3"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.23.1",
+    "@types/ws": "^8.18.1"
+  }
+}

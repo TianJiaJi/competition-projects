@@ -1,0 +1,15 @@
+node_modules/
+dist/
+dist-examples/
+.local/
+.sites-runtime/
+test-results/
+playwright-report/
+.env
+.env.local
+*.tsbuildinfo
+.DS_Store
+.pi/
+**/服务器登录登记表.local.*
+**/docs/部署/*.key
+**/docs/部署/*.pem

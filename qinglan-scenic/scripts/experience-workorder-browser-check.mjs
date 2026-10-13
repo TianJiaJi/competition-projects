@@ -1,0 +1,73 @@
+import { chromium, expect } from "@playwright/test";
+import { mkdir } from "node:fs/promises";
+
+// Run with scripts/experience-preview.ts; work orders are written to its temporary schema.
+await mkdir(".local/experience", { recursive: true });
+const browser = await chromium.launch();
+const admin = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+const gate = await browser.newPage({ viewport: { width: 390, height: 844 } });
+const errors = [];
+for (const page of [admin, gate]) page.on("pageerror", error => errors.push(error.message));
+try {
+  await admin.goto("http://127.0.0.1:6179/");
+  await admin.locator("#username").fill("admin01");
+  await admin.locator("#password").fill("123456");
+  await admin.getByRole("button", { name: "登录", exact: true }).click();
+  await expect(admin.getByText("工作台", { exact: true }).first()).toBeVisible();
+  await admin.goto("http://127.0.0.1:6179/#/oa");
+  await expect(admin.getByRole("heading", { name: "工单与审批" })).toBeVisible();
+  await expect(admin.getByRole("tab", { name: "维修工单与设施申请" })).toHaveAttribute("aria-selected", "true");
+  await admin.screenshot({ path: ".local/experience/workorder-before.png" });
+  const title = `浏览器工单验收${Date.now()}`;
+  await admin.getByRole("button", { name: "创建维修工单" }).click();
+  let dialog = admin.getByRole("dialog");
+  await dialog.getByLabel("设施").selectOption("creek");
+  await dialog.getByLabel("标题").fill(title);
+  await dialog.getByLabel("现场情况 / 原因").fill("浏览器验收：检查听溪台护栏。");
+  await dialog.getByRole("button", { name: "提交" }).click();
+  await expect(dialog).toHaveCount(0);
+  const card = admin.locator(".workflow article").filter({ has: admin.getByRole("heading", { name: title, exact: true }) });
+  await expect(card).toContainText("待派单");
+  await card.getByRole("button", { name: "查看与处理" }).click();
+  dialog = admin.getByRole("dialog");
+  const staffOption = dialog.locator("select option").filter({ hasText: "周志强" });
+  const staffId = await staffOption.getAttribute("value");
+  if (!staffId) throw Error("未找到可派单员工");
+  await dialog.locator("select").selectOption(staffId);
+  await dialog.getByRole("button", { name: "派单" }).click();
+  await expect(dialog).toContainText("待接单");
+  await gate.goto("http://127.0.0.1:6177/");
+  await gate.getByLabel("员工账号").fill("staff01");
+  await gate.getByLabel("密码", { exact: true }).fill("123456");
+  await gate.getByRole("button", { name: "登录", exact: true }).click();
+  const gateCard = gate.locator(".workflow article").filter({ has: gate.getByRole("heading", { name: title, exact: true }) });
+  await expect(gateCard).toBeVisible();
+  await gateCard.getByRole("button", { name: "查看与处理" }).click();
+  const gateDialog = gate.getByRole("dialog");
+  await gateDialog.getByRole("button", { name: "接单" }).click();
+  await expect(gateDialog).toContainText("已接单");
+  await gateDialog.getByRole("button", { name: "开始处理" }).click();
+  await expect(gateDialog).toContainText("处理中");
+  await gateDialog.getByLabel("处理说明").fill("已检查护栏并完成修复。");
+  await gateDialog.getByRole("button", { name: "提交验收" }).click();
+  await expect(gateDialog).toContainText("待验收");
+  await admin.reload();
+  await expect(card).toContainText("待验收");
+  await card.getByRole("button", { name: "查看与处理" }).click();
+  dialog = admin.getByRole("dialog");
+  await dialog.getByLabel("处理说明").fill("验收通过，记录已核对。");
+  await dialog.getByRole("button", { name: "验收通过" }).click();
+  await expect(dialog).toContainText("已完成");
+  await dialog.getByRole("button", { name: "关闭", exact: true }).click();
+  await admin.getByRole("tab", { name: "OA 审批" }).click();
+  await expect(admin.getByRole("heading", { name: "工单与审批" })).toBeVisible();
+  await expect(admin.locator(".oa-toolbar")).toBeVisible();
+  await admin.screenshot({ path: ".local/experience/oa-tab.png" });
+  expect(errors).toEqual([]);
+  console.log(JSON.stringify({ passed: true, title, errors }));
+} catch (error) {
+  await admin.screenshot({ path: ".local/experience/workorder-failure.png" }).catch(() => {});
+  throw error;
+} finally {
+  await browser.close();
+}

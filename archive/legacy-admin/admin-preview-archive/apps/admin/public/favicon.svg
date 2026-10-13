@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="青岚山境后台">
+  <rect width="64" height="64" rx="12" fill="#eaf3ef"/>
+  <path d="M6 46 L20 26 L30 38 L40 20 L58 46 Z" fill="#3c826b"/>
+  <path d="M6 52 L24 36 L38 50 L50 38 L58 52 Z" fill="#175f54" opacity="0.85"/>
+  <circle cx="46" cy="16" r="5" fill="#aa8747" opacity="0.9"/>
+</svg>

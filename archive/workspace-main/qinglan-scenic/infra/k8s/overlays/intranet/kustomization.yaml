@@ -1,0 +1,24 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: scenic-demo
+resources:
+- ../../base
+- storage.yaml
+- sakurafrp.yaml
+patches:
+- path: server-single-replica.yaml
+images:
+- name: scenic/mobile
+  newTag: 172b8a3
+- name: scenic/ops
+  newTag: 172b8a3
+- name: scenic/visitor
+  newTag: 172b8a3
+- name: scenic/admin
+  newTag: 172b8a3
+- name: scenic/gate
+  newTag: 172b8a3
+- name: scenic/demo
+  newTag: 172b8a3
+- name: scenic/server
+  newTag: 172b8a3

@@ -1,0 +1,20 @@
+import {test,expect} from '@playwright/test';
+import {pressureScenarios,pressureSnapshot} from '../fixtures/pressure';
+for(const scenario of pressureScenarios) test(`游线承载压力 ${scenario}`,async({page})=>{
+  const snapshot=pressureSnapshot(scenario), errors:string[]=[];
+  page.on('pageerror',error=>errors.push(error.message));
+  page.on('console',message=>{if(message.type()==='error')errors.push(message.text());});
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await page.routeWebSocket('**/ws?*',()=>{});
+  await page.route('**/api/v1/public/state',route=>route.fulfill({json:{data:{run:{id:'pressure-qa'},public:snapshot}}}));
+  await page.goto('/?scenicDiagnostics=1');
+  await expect(page.locator('.scroll-presentation').first()).toHaveAttribute('data-intro-state','ready',{timeout:45000});
+  await page.getByRole('button',{name:'人流',exact:true}).click();
+  await expect(page.locator('.heat-scale')).toBeVisible();
+  await expect(page.locator('.scene-canvas')).toHaveAttribute('data-context-muted','true');
+  await expect(page.locator('.legend')).toContainText('参考承载压力');
+  await expect(page.locator('.scene-canvas')).toHaveAttribute('data-heat-revision',/[1-9]/);
+  for(const label of await page.locator('.region-count > span').allTextContents()) expect(label).toMatch(/^约 [\d,]+ 人$/);
+  await page.screenshot({path:`.local/qa/pressure-visitor-${scenario}.png`});
+  expect(errors).toEqual([]);
+});

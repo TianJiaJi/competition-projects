@@ -1,0 +1,16 @@
+{
+  "name": "@scene/demo",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./bridge": "./src/bridge.ts",
+    "./materials": "./src/materials.ts",
+    "./builder": "./src/builder/client.ts",
+    "./builder-types": "./src/builder/types.ts",
+    "./school": "./src/samples/school/index.ts"
+  },
+  "dependencies": {
+    "@scene/domain": "workspace:*"
+  }
+}

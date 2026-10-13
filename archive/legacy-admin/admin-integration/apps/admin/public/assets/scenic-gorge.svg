@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" role="img" aria-labelledby="t1 d1">
+  <title id="t1">叠翠峡 · 峡谷示意图</title>
+  <desc id="d1">层叠石壁夹出一线山色的示意图，用于景点内容演示。</desc>
+  <rect width="640" height="400" fill="#eaf3ef"/>
+  <path d="M0 0 L200 0 L260 400 L0 400 Z" fill="#255d78" opacity="0.8"/>
+  <path d="M640 0 L440 0 L380 400 L640 400 Z" fill="#255d78" opacity="0.8"/>
+  <path d="M0 0 L140 0 L200 400 L0 400 Z" fill="#3c826b" opacity="0.7"/>
+  <path d="M640 0 L500 0 L440 400 L640 400 Z" fill="#3c826b" opacity="0.7"/>
+  <path d="M320 0 L300 120 L336 200 L304 300 L320 400 L340 300 L310 200 L344 120 L320 0 Z" fill="#c8ded4" opacity="0.9"/>
+  <g stroke="#f8fcfa" stroke-width="3" opacity="0.6" fill="none">
+    <path d="M120 60 L96 140 L128 220 L104 300"/>
+    <path d="M520 60 L544 140 L512 220 L536 300"/>
+  </g>
+  <text x="24" y="44" font-family="serif" font-size="24" fill="#f8fcfa">叠翠峡</text>
+  <text x="24" y="70" font-family="sans-serif" font-size="14" fill="#eaf3ef">峡谷示意图（本地自绘 SVG）</text>
+</svg>

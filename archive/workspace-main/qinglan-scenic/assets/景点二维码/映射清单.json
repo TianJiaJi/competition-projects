@@ -1,0 +1,55 @@
+{
+  "origin": "https://m.starhusk.com",
+  "deploymentVerified": false,
+  "items": [
+    {
+      "id": "creek",
+      "name": "听溪台",
+      "file": "听溪台.png",
+      "url": "https://m.starhusk.com/#/pages/detail/index?id=creek",
+      "decodeVerified": true
+    },
+    {
+      "id": "bamboo",
+      "name": "竹影幽径",
+      "file": "竹影幽径.png",
+      "url": "https://m.starhusk.com/#/pages/detail/index?id=bamboo",
+      "decodeVerified": true
+    },
+    {
+      "id": "gorge",
+      "name": "叠翠峡",
+      "file": "叠翠峡.png",
+      "url": "https://m.starhusk.com/#/pages/detail/index?id=gorge",
+      "decodeVerified": true
+    },
+    {
+      "id": "summit",
+      "name": "望岳台",
+      "file": "望岳台.png",
+      "url": "https://m.starhusk.com/#/pages/detail/index?id=summit",
+      "decodeVerified": true
+    },
+    {
+      "id": "falls",
+      "name": "飞瀑亭",
+      "file": "飞瀑亭.png",
+      "url": "https://m.starhusk.com/#/pages/detail/index?id=falls",
+      "decodeVerified": true
+    },
+    {
+      "id": "lake",
+      "name": "镜湖栈道",
+      "file": "镜湖栈道.png",
+      "url": "https://m.starhusk.com/#/pages/detail/index?id=lake",
+      "decodeVerified": true
+    },
+    {
+      "id": "forest",
+      "name": "松风林",
+      "file": "松风林.png",
+      "url": "https://m.starhusk.com/#/pages/detail/index?id=forest",
+      "decodeVerified": true
+    }
+  ]
+}

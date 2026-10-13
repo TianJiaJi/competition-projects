@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" role="img" aria-labelledby="t1 d1">
+  <title id="t1">望岳台 · 山巅示意图</title>
+  <desc id="d1">山顶远望山峦与湖泊的示意图，用于景点内容演示。</desc>
+  <rect width="640" height="400" fill="#eaf3ef"/>
+  <path d="M0 300 L120 170 L240 300 Z" fill="#3c826b" opacity="0.8"/>
+  <path d="M180 300 L300 140 L420 300 Z" fill="#255d78" opacity="0.8"/>
+  <path d="M360 300 L470 190 L580 300 Z" fill="#3c826b" opacity="0.7"/>
+  <ellipse cx="320" cy="330" rx="280" ry="46" fill="#255d78" opacity="0.45"/>
+  <path d="M180 140 L300 250 L240 250 Z" fill="#c8ded4" opacity="0.85"/>
+  <g fill="#c8ded4" opacity="0.8">
+    <ellipse cx="150" cy="110" rx="70" ry="16"/>
+    <ellipse cx="470" cy="120" rx="80" ry="18"/>
+  </g>
+  <circle cx="300" cy="132" r="10" fill="#aa8747" opacity="0.85"/>
+  <text x="24" y="44" font-family="serif" font-size="24" fill="#193b35">望岳台</text>
+  <text x="24" y="70" font-family="sans-serif" font-size="14" fill="#536b63">山巅示意图（本地自绘 SVG）</text>
+</svg>

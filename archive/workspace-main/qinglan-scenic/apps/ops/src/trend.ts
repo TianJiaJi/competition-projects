@@ -1,0 +1,4 @@
+/** Preserve observed history and append the current sample without fabricating future points. */
+export function observedTrend(history:readonly {time:string;count:number}[],businessTime:string,current:number){const now=Date.parse(businessTime);const values=history.filter(p=>Date.parse(p.time)<=now).map(p=>({...p}));const latest=values.at(-1);if(latest?.time===businessTime)latest.count=current;else values.push({time:businessTime,count:current});return values;}
+export function trendMaximum(values:readonly {count:number}[]){return Math.max(1000,Math.ceil((Math.max(0,...values.map(p=>p.count))+1)/1000)*1000);}
+export function shanghaiClock(time:string){return /^\d{2}:\d{2}$/.test(time)?time:new Intl.DateTimeFormat('zh-CN',{timeZone:'Asia/Shanghai',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(time));}

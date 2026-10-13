@@ -1,0 +1,514 @@
+{
+  "buildings": [
+    {
+      "id": "B1",
+      "title": "明理楼",
+      "location": "教学东区",
+      "category": "教学楼",
+      "status": "使用中",
+      "description": "公共教学空间，配置多媒体教室与讨论室。",
+      "date": "2026-09-25",
+      "capacity": 40,
+      "used": 32
+    },
+    {
+      "id": "B2",
+      "title": "致远楼",
+      "location": "教学西区",
+      "category": "教学楼",
+      "status": "使用中",
+      "description": "专业课程教学与学习讨论空间。",
+      "date": "2026-09-25",
+      "capacity": 36,
+      "used": 27
+    },
+    {
+      "id": "B3",
+      "title": "知行图书馆",
+      "location": "校园中心",
+      "category": "图书馆",
+      "status": "使用中",
+      "description": "阅读、自习、研讨与信息检索服务。",
+      "date": "2026-09-25",
+      "capacity": 18,
+      "used": 14
+    },
+    {
+      "id": "B4",
+      "title": "科创中心",
+      "location": "实训区",
+      "category": "实训楼",
+      "status": "使用中",
+      "description": "开放实验与创新实践空间。",
+      "date": "2026-09-25",
+      "capacity": 28,
+      "used": 20
+    },
+    {
+      "id": "B5",
+      "title": "学生活动中心",
+      "location": "生活区",
+      "category": "活动楼",
+      "status": "使用中",
+      "description": "社团活动、文艺排练与交流空间。",
+      "date": "2026-09-25",
+      "capacity": 16,
+      "used": 11
+    },
+    {
+      "id": "B6",
+      "title": "风雨操场",
+      "location": "运动区",
+      "category": "体育场馆",
+      "status": "使用中",
+      "description": "室内体育课程与课余锻炼空间。",
+      "date": "2026-09-25",
+      "capacity": 12,
+      "used": 8
+    }
+  ],
+  "people": [
+    {
+      "id": "P1",
+      "title": "角色 01",
+      "location": "信息工程学院",
+      "category": "教师",
+      "status": "已认证",
+      "description": "教职工服务档案，可使用校园公共设施。",
+      "date": "2026-09-25",
+      "contact": ""
+    },
+    {
+      "id": "P2",
+      "title": "角色 02",
+      "location": "智能制造学院",
+      "category": "学生",
+      "status": "已认证",
+      "description": "在校学生服务档案，可申请场馆与后勤服务。",
+      "date": "2026-09-25",
+      "contact": ""
+    },
+    {
+      "id": "P3",
+      "title": "角色 03",
+      "location": "艺术设计学院",
+      "category": "学生",
+      "status": "已认证",
+      "description": "在校学生服务档案，可申请场馆与后勤服务。",
+      "date": "2026-09-25",
+      "contact": ""
+    },
+    {
+      "id": "P4",
+      "title": "角色 04",
+      "location": "公共教学部",
+      "category": "学生",
+      "status": "已认证",
+      "description": "在校学生服务档案，可申请场馆与后勤服务。",
+      "date": "2026-09-25",
+      "contact": ""
+    },
+    {
+      "id": "P5",
+      "title": "角色 05",
+      "location": "信息工程学院",
+      "category": "学生",
+      "status": "已认证",
+      "description": "在校学生服务档案，可申请场馆与后勤服务。",
+      "date": "2026-09-25",
+      "contact": ""
+    },
+    {
+      "id": "P6",
+      "title": "角色 06",
+      "location": "智能制造学院",
+      "category": "教师",
+      "status": "已认证",
+      "description": "教职工服务档案，可使用校园公共设施。",
+      "date": "2026-09-25",
+      "contact": ""
+    },
+    {
+      "id": "P7",
+      "title": "角色 07",
+      "location": "艺术设计学院",
+      "category": "学生",
+      "status": "已认证",
+      "description": "在校学生服务档案，可申请场馆与后勤服务。",
+      "date": "2026-09-25",
+      "contact": ""
+    },
+    {
+      "id": "P8",
+      "title": "角色 08",
+      "location": "公共教学部",
+      "category": "学生",
+      "status": "已认证",
+      "description": "在校学生服务档案，可申请场馆与后勤服务。",
+      "date": "2026-09-25",
+      "contact": ""
+    },
+    {
+      "id": "P9",
+      "title": "角色 01",
+      "location": "信息工程学院",
+      "category": "学生",
+      "status": "已认证",
+      "description": "在校学生服务档案，可申请场馆与后勤服务。",
+      "date": "2026-09-25",
+      "contact": ""
+    },
+    {
+      "id": "P10",
+      "title": "角色 02",
+      "location": "智能制造学院",
+      "category": "学生",
+      "status": "已认证",
+      "description": "在校学生服务档案，可申请场馆与后勤服务。",
+      "date": "2026-09-25",
+      "contact": ""
+    },
+    {
+      "id": "P11",
+      "title": "角色 03",
+      "location": "艺术设计学院",
+      "category": "教师",
+      "status": "已认证",
+      "description": "教职工服务档案，可使用校园公共设施。",
+      "date": "2026-09-25",
+      "contact": ""
+    },
+    {
+      "id": "P12",
+      "title": "角色 04",
+      "location": "公共教学部",
+      "category": "学生",
+      "status": "已认证",
+      "description": "在校学生服务档案，可申请场馆与后勤服务。",
+      "date": "2026-09-25",
+      "contact": ""
+    },
+    {
+      "id": "P13",
+      "title": "角色 05",
+      "location": "信息工程学院",
+      "category": "学生",
+      "status": "已认证",
+      "description": "在校学生服务档案，可申请场馆与后勤服务。",
+      "date": "2026-09-25",
+      "contact": ""
+    },
+    {
+      "id": "P14",
+      "title": "角色 06",
+      "location": "智能制造学院",
+      "category": "学生",
+      "status": "已认证",
+      "description": "在校学生服务档案，可申请场馆与后勤服务。",
+      "date": "2026-09-25",
+      "contact": ""
+    },
+    {
+      "id": "P15",
+      "title": "角色 07",
+      "location": "艺术设计学院",
+      "category": "学生",
+      "status": "已认证",
+      "description": "在校学生服务档案，可申请场馆与后勤服务。",
+      "date": "2026-09-25",
+      "contact": ""
+    },
+    {
+      "id": "P16",
+      "title": "角色 08",
+      "location": "公共教学部",
+      "category": "教师",
+      "status": "待认证",
+      "description": "教职工服务档案，可使用校园公共设施。",
+      "date": "2026-09-25",
+      "contact": ""
+    }
+  ],
+  "facilities": [
+    {
+      "id": "F1",
+      "title": "图书馆研讨室",
+      "location": "知行图书馆二层",
+      "category": "研讨空间",
+      "status": "正常",
+      "description": "开放时间 08:00–22:00，可用于小组学习与课题讨论。",
+      "date": "2026-09-25",
+      "capacity": 12,
+      "used": 6,
+      "buildingId": "B3"
+    },
+    {
+      "id": "F2",
+      "title": "羽毛球馆",
+      "location": "风雨操场一层",
+      "category": "体育场馆",
+      "status": "正常",
+      "description": "开放时间 07:00–21:00，请按预约时段入场。",
+      "date": "2026-09-25",
+      "capacity": 24,
+      "used": 16,
+      "buildingId": "B6"
+    },
+    {
+      "id": "F3",
+      "title": "科创实验室",
+      "location": "科创中心二层",
+      "category": "实验空间",
+      "status": "正常",
+      "description": "开放时间 09:00–18:00，需在教师指导下使用设备。",
+      "date": "2026-09-25",
+      "capacity": 20,
+      "used": 12,
+      "buildingId": "B4"
+    },
+    {
+      "id": "F4",
+      "title": "明理楼投影设备",
+      "location": "明理楼 302",
+      "category": "教学设备",
+      "status": "检修中",
+      "description": "图像偏色，已登记后勤检修。",
+      "date": "2026-09-25",
+      "buildingId": "B1"
+    },
+    {
+      "id": "F5",
+      "title": "东门人行闸机",
+      "location": "校园东门",
+      "category": "通行设备",
+      "status": "正常",
+      "description": "师生凭身份信息通行，访客按校园要求登记。",
+      "date": "2026-09-25"
+    },
+    {
+      "id": "F6",
+      "title": "图书馆消防系统",
+      "location": "知行图书馆",
+      "category": "消防设备",
+      "status": "正常",
+      "description": "今日例行检查状态正常。",
+      "date": "2026-09-25",
+      "buildingId": "B3"
+    },
+    {
+      "id": "F7",
+      "title": "校园公共照明",
+      "location": "教学东区",
+      "category": "照明设备",
+      "status": "正常",
+      "description": "按课程与公共空间使用情况提供照明。",
+      "date": "2026-09-25",
+      "buildingId": "B1"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "明理楼投影画面偏色",
+      "location": "明理楼 302",
+      "category": "教学设备",
+      "status": "待处理",
+      "description": "投影画面出现偏色，请检查信号线与灯源。",
+      "date": "2026-09-25",
+      "submitterId": "user01",
+      "owner": "师生用户 01",
+      "facilityId": "F4",
+      "buildingId": "B1"
+    },
+    {
+      "id": "T2",
+      "title": "宿舍洗手池漏水",
+      "location": "学生公寓 2栋",
+      "category": "用水报修",
+      "status": "处理中",
+      "description": "洗手池下方接口滴漏，需要紧固和更换密封件。",
+      "date": "2026-09-25",
+      "owner": "师生用户 01",
+      "submitterId": "user01",
+      "assigneeId": "staff01"
+    },
+    {
+      "id": "T3",
+      "title": "图书馆插座松动",
+      "location": "知行图书馆三层",
+      "category": "用电报修",
+      "status": "待处理",
+      "description": "靠窗自习区插座松动，已暂停使用。",
+      "date": "2026-09-25",
+      "submitterId": "user01",
+      "owner": "师生用户 01",
+      "facilityId": "F1",
+      "buildingId": "B3"
+    },
+    {
+      "id": "T4",
+      "title": "操场照明已修复",
+      "location": "风雨操场",
+      "category": "照明报修",
+      "status": "已完成",
+      "description": "照明灯具闪烁问题已排查。",
+      "date": "2026-09-25",
+      "owner": "师生用户 01",
+      "result": "更换驱动电源并连续测试，照明正常。",
+      "submitterId": "user01",
+      "assigneeId": "staff01",
+      "facilityId": "F2",
+      "buildingId": "B6"
+    }
+  ],
+  "inspections": [
+    {
+      "id": "I1",
+      "title": "实验室安全巡检",
+      "location": "科创中心",
+      "category": "安全巡检",
+      "status": "待处理",
+      "description": "检查电源、设备、消防通道与实验废弃物收集。",
+      "date": "2026-09-25",
+      "submitterId": "user01",
+      "owner": "师生用户 01"
+    },
+    {
+      "id": "I2",
+      "title": "教学楼公共设施巡检",
+      "location": "明理楼",
+      "category": "设备巡检",
+      "status": "待处理",
+      "description": "检查教室照明、空调与公共饮水设备。",
+      "date": "2026-09-25",
+      "submitterId": "user01",
+      "owner": "师生用户 01"
+    },
+    {
+      "id": "I3",
+      "title": "体育设施日常巡检",
+      "location": "风雨操场",
+      "category": "场馆巡检",
+      "status": "已完成",
+      "description": "检查地面、球网固定与疏散通道。",
+      "date": "2026-09-25",
+      "owner": "师生用户 01",
+      "result": "设施状态良好，通道畅通。",
+      "submitterId": "user01",
+      "assigneeId": "staff01"
+    }
+  ],
+  "bookings": [
+    {
+      "id": "R1",
+      "title": "课题讨论",
+      "location": "图书馆研讨室",
+      "category": "研讨空间",
+      "status": "已预约",
+      "description": "9月25日 14:00–15:00，共 6 人。",
+      "date": "2026-09-25",
+      "owner": "师生用户 01",
+      "facilityId": "F1",
+      "buildingId": "B3",
+      "submitterId": "user01",
+      "timeSlot": "14:00–15:00",
+      "count": 6
+    },
+    {
+      "id": "R2",
+      "title": "羽毛球训练",
+      "location": "羽毛球馆",
+      "category": "体育场馆",
+      "status": "已预约",
+      "description": "9月25日 18:00–19:00，共 4 人。",
+      "date": "2026-09-25",
+      "owner": "师生用户 02",
+      "facilityId": "F2",
+      "buildingId": "B6",
+      "submitterId": "user02",
+      "timeSlot": "18:00–19:00",
+      "count": 4
+    },
+    {
+      "id": "R3",
+      "title": "创新实践",
+      "location": "科创实验室",
+      "category": "实验空间",
+      "status": "已预约",
+      "description": "9月25日 15:00–16:00，共 8 人。",
+      "date": "2026-09-25",
+      "owner": "师生用户 03",
+      "facilityId": "F3",
+      "buildingId": "B4",
+      "submitterId": "user03",
+      "timeSlot": "15:00–16:00",
+      "count": 8
+    },
+    {
+      "id": "R4",
+      "title": "学习交流",
+      "location": "图书馆研讨室",
+      "category": "研讨空间",
+      "status": "已取消",
+      "description": "9月25日 09:00–10:00。",
+      "date": "2026-09-25",
+      "owner": "师生用户 04",
+      "facilityId": "F1",
+      "buildingId": "B3",
+      "submitterId": "user04",
+      "timeSlot": "09:00–10:00",
+      "count": 1
+    }
+  ],
+  "visitors": [],
+  "notices": [
+    {
+      "id": "N1",
+      "title": "在秋日，遇见新的可能",
+      "location": "学生活动中心",
+      "category": "校园活动",
+      "status": "已发布",
+      "description": "本周五 16:00 举行社团开放日。走近喜欢的社团，与志同道合的伙伴一起探索。",
+      "date": "2026-09-25"
+    },
+    {
+      "id": "N2",
+      "title": "图书馆研讨室开放预约",
+      "location": "知行图书馆",
+      "category": "服务通知",
+      "status": "已发布",
+      "description": "研讨室每日 08:00–22:00 开放。请按预约时段使用，保持安静并爱护设施。",
+      "date": "2026-09-25"
+    },
+    {
+      "id": "N3",
+      "title": "实验室安全使用提示",
+      "location": "科创中心",
+      "category": "安全指南",
+      "status": "已发布",
+      "description": "进入实验室前请了解设备使用规范，在指导教师协助下开展实践，离开时关闭电源。",
+      "date": "2026-09-25"
+    }
+  ],
+  "security": [
+    {
+      "id": "S1",
+      "title": "实训楼通道物品占用",
+      "location": "科创中心",
+      "category": "通道巡查",
+      "status": "关注",
+      "description": "值班人员已前往处理，请保持实验区疏散通道畅通。",
+      "date": "2026-09-25"
+    },
+    {
+      "id": "S2",
+      "title": "图书馆消防检查完成",
+      "location": "知行图书馆",
+      "category": "设备巡查",
+      "status": "正常",
+      "description": "消防设备和疏散指示检查正常。",
+      "date": "2026-09-25"
+    }
+  ],
+  "parking": []
+}

@@ -1,0 +1,16 @@
+.liquid-glass-material {
+  box-sizing: border-box; isolation: isolate;
+  border: 1px solid var(--glass-border, rgb(255 255 255 / 0.38)); border-bottom-color: var(--glass-border-bottom, rgb(255 255 255 / 0.2));
+  border-radius: var(--glass-radius);
+  background-color: rgb(var(--glass-tint-rgb, 248 252 250) / var(--glass-tint-opacity));
+  background-image: linear-gradient(150deg, var(--glass-highlight-start, rgb(255 255 255 / 0.22)), var(--glass-highlight-middle, rgb(255 255 255 / 0.025)) 55%, var(--glass-highlight-end, rgb(255 255 255 / 0.07)));
+  color: var(--glass-text-color, #193b35); font: inherit; font-weight: 500; line-height: 1.5;
+  box-shadow: var(--glass-shadow, inset 0 -1px 0 rgb(25 59 53 / 0.05), 0 4px 12px rgb(25 59 53 / 0.08));
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.12);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.12);
+
+}
+.liquid-glass-material[data-glass-mode='plain'] { backdrop-filter: none; -webkit-backdrop-filter: none; }
+
+.liquid-glass-material.liquid-glass-button--primary { background-color: rgb(23 95 84 / calc(0.7 + var(--glass-tint-opacity) * 0.2)); color: var(--glass-text-color, #fff); }
+@media(forced-colors:active){.liquid-glass-material{background:Canvas!important;color:CanvasText;border-color:CanvasText;backdrop-filter:none;-webkit-backdrop-filter:none;}}

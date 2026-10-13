@@ -1,0 +1,156 @@
+{
+  "version": "2.0.0",
+  "base": "http://localhost:5507",
+  "steps": [
+    "接收与校验参数",
+    "校验角色、记录归属及业务状态",
+    "绑定参数并执行 SQL",
+    "整理记录与更新时间"
+  ],
+  "authorization": "Authorization: Bearer <token>；写入携带 X-Request-Id 防止重复提交",
+  "sessions": {
+    "roles": [
+      "mobile",
+      "staff",
+      "admin"
+    ],
+    "credentials": {
+      "mobile": "user01",
+      "staff": "staff01",
+      "admin": "admin01"
+    },
+    "password": "123456"
+  },
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/runs/:run/records",
+      "response": {
+        "records": "<按集合分组的记录>",
+        "updatedAt": "<ISO 时间>"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/runs/:run/session",
+      "parameters": [
+        "terminal",
+        "username",
+        "password"
+      ],
+      "response": [
+        "token",
+        "identity",
+        "username"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/runs/:run/session",
+      "response": [
+        "role",
+        "username",
+        "identity"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/runs/:run/session",
+      "response": {
+        "ok": true
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/runs/:run/records/:collection",
+      "parameters": [
+        "title",
+        "location",
+        "category",
+        "status",
+        "description",
+        "date",
+        "facilityId",
+        "buildingId",
+        "timeSlot",
+        "count"
+      ],
+      "response": [
+        "item",
+        "records",
+        "updatedAt"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/runs/:run/records/:collection/:id",
+      "parameters": "<允许维护的记录字段>",
+      "response": [
+        "item",
+        "records",
+        "updatedAt"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/runs/:run/records/:collection/:id/claim",
+      "parameters": [],
+      "response": [
+        "item",
+        "records",
+        "updatedAt"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/runs/:run/records/:collection/:id/complete",
+      "parameters": [
+        "result"
+      ],
+      "response": [
+        "item",
+        "records",
+        "updatedAt"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/runs/:run/records/:collection/:id/cancel",
+      "parameters": [],
+      "response": [
+        "item",
+        "records",
+        "updatedAt"
+      ]
+    }
+  ],
+  "rules": {
+    "mobile": [
+      "仅创建自己的报修和预约",
+      "仅取消自己的有效预约"
+    ],
+    "staff": [
+      "仅领取待处理任务或巡检",
+      "仅完成自己领取的任务",
+      "处理结果不能为空"
+    ],
+    "admin": [
+      "八类数据新增与编辑",
+      "无删除接口"
+    ]
+  },
+  "relations": [
+    "facilities.buildingId → buildings.id",
+    "tasks.facilityId → facilities.id",
+    "submitterId 与 assigneeId 独立保存",
+    "bookings: facilityId / date / timeSlot / count"
+  ],
+  "errors": {
+    "400": "字段或引用无效",
+    "401": "需要登录",
+    "403": "角色或归属不符",
+    "404": "记录不存在",
+    "409": "状态冲突",
+    "410": "轮次失效"
+  }
+}

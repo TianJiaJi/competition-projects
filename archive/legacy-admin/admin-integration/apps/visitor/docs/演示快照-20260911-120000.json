@@ -1,0 +1,460 @@
+{
+  "revision": 178909920,
+  "updatedAt": "2026-09-11T04:00:00.000Z",
+  "parkOpen": true,
+  "visitors": 5461,
+  "parkingFree": 288,
+  "weather": {
+    "label": "多云",
+    "temperature": 23,
+    "humidity": 68,
+    "wind": "东南风 2.1 m/s",
+    "aqi": 36,
+    "ions": 2840
+  },
+  "points": {
+    "terminal-entry": {
+      "availability": "open",
+      "load": "unknown"
+    },
+    "terminal-bamboo": {
+      "availability": "open",
+      "load": "unknown"
+    },
+    "terminal-summit": {
+      "availability": "open",
+      "load": "unknown"
+    },
+    "terminal-market": {
+      "availability": "open",
+      "load": "unknown"
+    },
+    "aed-entry": {
+      "availability": "open",
+      "load": "unknown"
+    },
+    "aed-summit": {
+      "availability": "open",
+      "load": "unknown"
+    },
+    "aid-entry": {
+      "availability": "open",
+      "load": "unknown"
+    },
+    "aid-bamboo": {
+      "availability": "open",
+      "load": "unknown"
+    },
+    "help-creek": {
+      "availability": "open",
+      "load": "unknown"
+    },
+    "help-gorge": {
+      "availability": "maintenance",
+      "load": "unknown",
+      "reason": "求助设备检修中，请联系现场工作人员。"
+    },
+    "help-forest": {
+      "availability": "open",
+      "load": "unknown"
+    },
+    "help-falls": {
+      "availability": "open",
+      "load": "unknown"
+    },
+    "ring-creek": {
+      "availability": "open",
+      "load": "unknown"
+    },
+    "ring-lake": {
+      "availability": "closed",
+      "load": "unknown",
+      "reason": "镜湖区域养护中，请沿主路通行。"
+    },
+    "fire-market": {
+      "availability": "open",
+      "load": "unknown"
+    },
+    "fire-lower": {
+      "availability": "open",
+      "load": "unknown"
+    },
+    "fire-bamboo": {
+      "availability": "maintenance",
+      "load": "unknown",
+      "reason": "设备检修中，请使用归云集或索道下站灭火器。"
+    },
+    "shelter-entry": {
+      "availability": "open",
+      "load": "unknown"
+    },
+    "shelter-summit": {
+      "availability": "open",
+      "load": "unknown"
+    },
+    "entry": {
+      "availability": "open",
+      "load": "moderate"
+    },
+    "gate-out": {
+      "availability": "open",
+      "load": "moderate"
+    },
+    "creek": {
+      "availability": "open",
+      "load": "quiet"
+    },
+    "bamboo": {
+      "availability": "open",
+      "load": "moderate"
+    },
+    "gorge": {
+      "availability": "open",
+      "load": "moderate"
+    },
+    "summit": {
+      "availability": "open",
+      "load": "busy"
+    },
+    "falls": {
+      "availability": "open",
+      "load": "moderate"
+    },
+    "lake": {
+      "availability": "closed",
+      "load": "unknown",
+      "reason": "栈道养护中，开放时间以公告为准。"
+    },
+    "forest": {
+      "availability": "open",
+      "load": "quiet"
+    },
+    "market": {
+      "availability": "open",
+      "load": "moderate"
+    },
+    "supply": {
+      "availability": "open",
+      "load": "moderate"
+    },
+    "upper": {
+      "availability": "open",
+      "load": "quiet",
+      "cable": {
+        "cabinSeats": 8,
+        "cabinCount": 40,
+        "totalCapacity": 320,
+        "directionCapacity": 160,
+        "dispatchSeconds": 24,
+        "travelMinutes": 8,
+        "capacityPerMinute": 20,
+        "opensAt": "08:00",
+        "closesAt": "18:30",
+        "direction": "down",
+        "queueCount": 0,
+        "inTransit": 80,
+        "waitMinutes": 0.4
+      }
+    },
+    "lower": {
+      "availability": "open",
+      "load": "quiet",
+      "cable": {
+        "cabinSeats": 8,
+        "cabinCount": 40,
+        "totalCapacity": 320,
+        "directionCapacity": 160,
+        "dispatchSeconds": 24,
+        "travelMinutes": 8,
+        "capacityPerMinute": 20,
+        "opensAt": "08:00",
+        "closesAt": "18:30",
+        "direction": "up",
+        "queueCount": 0,
+        "inTransit": 89,
+        "waitMinutes": 0.4
+      }
+    },
+    "t1": {
+      "availability": "open",
+      "load": "quiet",
+      "restroom": {
+        "totalStalls": 46,
+        "occupiedStalls": 10,
+        "availableStalls": 36,
+        "queueCount": 0,
+        "female": {
+          "totalStalls": 24,
+          "occupiedStalls": 6,
+          "availableStalls": 18,
+          "queueCount": 0
+        },
+        "male": {
+          "totalStalls": 8,
+          "occupiedStalls": 2,
+          "availableStalls": 6,
+          "queueCount": 0
+        },
+        "maleUrinals": {
+          "totalStalls": 12,
+          "occupiedStalls": 1,
+          "availableStalls": 11,
+          "queueCount": 0
+        },
+        "accessible": {
+          "totalStalls": 2,
+          "occupiedStalls": 1,
+          "availableStalls": 1,
+          "queueCount": 0
+        }
+      }
+    },
+    "t2": {
+      "availability": "open",
+      "load": "moderate",
+      "restroom": {
+        "totalStalls": 32,
+        "occupiedStalls": 19,
+        "availableStalls": 13,
+        "queueCount": 0,
+        "female": {
+          "totalStalls": 16,
+          "occupiedStalls": 10,
+          "availableStalls": 6,
+          "queueCount": 0
+        },
+        "male": {
+          "totalStalls": 6,
+          "occupiedStalls": 5,
+          "availableStalls": 1,
+          "queueCount": 0
+        },
+        "maleUrinals": {
+          "totalStalls": 8,
+          "occupiedStalls": 3,
+          "availableStalls": 5,
+          "queueCount": 0
+        },
+        "accessible": {
+          "totalStalls": 2,
+          "occupiedStalls": 1,
+          "availableStalls": 1,
+          "queueCount": 0
+        }
+      }
+    },
+    "t3": {
+      "availability": "maintenance",
+      "load": "unknown",
+      "reason": "设施检修，请使用溪谷卫生间或山顶卫生间。",
+      "restroom": {
+        "totalStalls": 32,
+        "occupiedStalls": 0,
+        "availableStalls": 0,
+        "queueCount": 0,
+        "female": {
+          "totalStalls": 16,
+          "occupiedStalls": 0,
+          "availableStalls": 0,
+          "queueCount": 0
+        },
+        "male": {
+          "totalStalls": 6,
+          "occupiedStalls": 0,
+          "availableStalls": 0,
+          "queueCount": 0
+        },
+        "maleUrinals": {
+          "totalStalls": 8,
+          "occupiedStalls": 0,
+          "availableStalls": 0,
+          "queueCount": 0
+        },
+        "accessible": {
+          "totalStalls": 2,
+          "occupiedStalls": 0,
+          "availableStalls": 0,
+          "queueCount": 0
+        }
+      }
+    },
+    "t4": {
+      "availability": "open",
+      "load": "moderate",
+      "restroom": {
+        "totalStalls": 46,
+        "occupiedStalls": 28,
+        "availableStalls": 18,
+        "queueCount": 0,
+        "female": {
+          "totalStalls": 24,
+          "occupiedStalls": 17,
+          "availableStalls": 7,
+          "queueCount": 0
+        },
+        "male": {
+          "totalStalls": 8,
+          "occupiedStalls": 6,
+          "availableStalls": 2,
+          "queueCount": 0
+        },
+        "maleUrinals": {
+          "totalStalls": 12,
+          "occupiedStalls": 4,
+          "availableStalls": 8,
+          "queueCount": 0
+        },
+        "accessible": {
+          "totalStalls": 2,
+          "occupiedStalls": 1,
+          "availableStalls": 1,
+          "queueCount": 0
+        }
+      }
+    },
+    "t5": {
+      "availability": "closed",
+      "load": "unknown",
+      "reason": "镜湖区域养护中，请沿主路通行。",
+      "restroom": {
+        "totalStalls": 46,
+        "occupiedStalls": 0,
+        "availableStalls": 0,
+        "queueCount": 0,
+        "female": {
+          "totalStalls": 24,
+          "occupiedStalls": 0,
+          "availableStalls": 0,
+          "queueCount": 0
+        },
+        "male": {
+          "totalStalls": 8,
+          "occupiedStalls": 0,
+          "availableStalls": 0,
+          "queueCount": 0
+        },
+        "maleUrinals": {
+          "totalStalls": 12,
+          "occupiedStalls": 0,
+          "availableStalls": 0,
+          "queueCount": 0
+        },
+        "accessible": {
+          "totalStalls": 2,
+          "occupiedStalls": 0,
+          "availableStalls": 0,
+          "queueCount": 0
+        }
+      }
+    },
+    "t6": {
+      "availability": "open",
+      "load": "moderate",
+      "restroom": {
+        "totalStalls": 32,
+        "occupiedStalls": 13,
+        "availableStalls": 19,
+        "queueCount": 0,
+        "female": {
+          "totalStalls": 16,
+          "occupiedStalls": 8,
+          "availableStalls": 8,
+          "queueCount": 0
+        },
+        "male": {
+          "totalStalls": 6,
+          "occupiedStalls": 4,
+          "availableStalls": 2,
+          "queueCount": 0
+        },
+        "maleUrinals": {
+          "totalStalls": 8,
+          "occupiedStalls": 1,
+          "availableStalls": 7,
+          "queueCount": 0
+        },
+        "accessible": {
+          "totalStalls": 2,
+          "occupiedStalls": 0,
+          "availableStalls": 2,
+          "queueCount": 0
+        }
+      }
+    },
+    "p1": {
+      "availability": "open",
+      "load": "busy",
+      "parkingCapacity": 700,
+      "parkingFree": 128
+    },
+    "p2": {
+      "availability": "open",
+      "load": "moderate",
+      "parkingCapacity": 500,
+      "parkingFree": 96
+    },
+    "p3": {
+      "availability": "open",
+      "load": "moderate",
+      "parkingCapacity": 300,
+      "parkingFree": 64
+    }
+  },
+  "regions": {
+    "Z0": {
+      "availability": "open",
+      "load": "moderate",
+      "count": 380
+    },
+    "Z1": {
+      "availability": "open",
+      "load": "quiet",
+      "count": 492
+    },
+    "Z2": {
+      "availability": "open",
+      "load": "moderate",
+      "count": 635
+    },
+    "Z3": {
+      "availability": "open",
+      "load": "moderate",
+      "count": 547
+    },
+    "Z4": {
+      "availability": "open",
+      "load": "busy",
+      "count": 1268
+    },
+    "Z5": {
+      "availability": "closed",
+      "load": "unknown",
+      "count": 0,
+      "reason": "镜湖区域养护中，请沿主路通行。"
+    },
+    "Z6": {
+      "availability": "open",
+      "load": "quiet",
+      "count": 303
+    },
+    "Z7": {
+      "availability": "open",
+      "load": "moderate",
+      "count": 640
+    },
+    "Z8": {
+      "availability": "open",
+      "load": "quiet",
+      "count": 1196
+    }
+  },
+  "closedEdgeIds": [],
+  "announcements": [
+    {
+      "id": "lake-care",
+      "title": "镜湖栈道养护中，请沿主路通行",
+      "body": "镜湖栈道正在进行日常养护，暂不开放。环形主路正常通行，请勿进入灰色标注区域；恢复开放时间以最新公告为准。",
+      "pointId": "lake"
+    }
+  ]
+}

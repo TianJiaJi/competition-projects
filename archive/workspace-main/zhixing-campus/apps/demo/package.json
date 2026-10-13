@@ -1,0 +1,19 @@
+{
+  "name": "@scene/demo-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host localhost",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@scene/demo": "workspace:*",
+    "@scene/domain": "workspace:*",
+    "vue": "^3.5.21",
+    "@scene/ui": "workspace:*"
+  },
+  "devDependencies": {
+    "vite": "^7.1.5",
+    "@vitejs/plugin-vue": "^6.0.1"
+  }
+}

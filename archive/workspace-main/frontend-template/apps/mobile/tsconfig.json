@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "types": [
+      "@dcloudio/types",
+      "vite/client"
+    ],
+    "baseUrl": "."
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.vue",
+    "../../scenario/**/*.ts",
+    "../../packages/domain/src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

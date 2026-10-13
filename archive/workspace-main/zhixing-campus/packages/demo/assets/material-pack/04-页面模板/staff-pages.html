@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><title>staff-pages</title></head><body>
+<template id="staff-pages"><header><h1 data-bind="applicationName">应用名称</h1><nav><a href="#overview">任务总览</a><a href="#tasks">任务列表</a><a href="#inspections">巡检计划</a><a href="#history">历史记录</a></nav><span data-bind="identity"></span><button data-action="logout">退出</button></header><main>
+<form data-page="login"><label>账号<input name="username" type="text" required /></label><label>密码<input name="password" type="password" required /></label><button type="submit">登录</button><p role="alert" data-bind="error"></p></form>
+
+<section data-page="overview"><section class="metrics" aria-label="运行指标"><article data-repeat="metrics"><h3 data-bind="label"></h3><output data-bind="value"></output><small data-bind="unit"></small></article></section></section>
+
+<section data-page="tasks"><h2>任务列表</h2><form role="search"><label>关键词<input name="query" type="text" required /></label><select name="status" aria-label="状态"><option value="">全部</option></select><button>查询</button></form><table><thead><tr><th>名称</th><th>位置</th><th>类型</th><th>状态</th><th>操作</th></tr></thead><tbody><tr data-repeat="records.tasks"><td data-bind="title"></td><td data-bind="location"></td><td data-bind="category"></td><td data-bind="status"></td><td><button data-action="detail">查看详情</button><button data-action="claim">领取</button></td></tr></tbody></table><p data-if="empty">暂无记录</p></section>
+
+<section data-page="inspections"><h2>巡检计划</h2><form role="search"><label>关键词<input name="query" type="text" required /></label><select name="status" aria-label="状态"><option value="">全部</option></select><button>查询</button></form><table><thead><tr><th>名称</th><th>位置</th><th>类型</th><th>状态</th><th>操作</th></tr></thead><tbody><tr data-repeat="records.inspections"><td data-bind="title"></td><td data-bind="location"></td><td data-bind="category"></td><td data-bind="status"></td><td><button data-action="detail">查看详情</button><button data-action="claim">领取</button></td></tr></tbody></table><p data-if="empty">暂无记录</p></section>
+
+<section data-page="history"><h2>处理历史</h2><form role="search"><label>关键词<input name="query" type="text" required /></label><select name="status" aria-label="状态"><option value="">全部</option></select><button>查询</button></form><table><thead><tr><th>名称</th><th>位置</th><th>类型</th><th>状态</th><th>操作</th></tr></thead><tbody><tr data-repeat="records.history"><td data-bind="title"></td><td data-bind="location"></td><td data-bind="category"></td><td data-bind="status"></td><td><button data-action="detail">查看详情</button></td></tr></tbody></table><p data-if="empty">暂无记录</p></section>
+
+<section data-page="detail"><h2 data-bind="record.title">记录详情</h2><dl><dt>位置</dt><dd data-bind="record.location"></dd><dt>状态</dt><dd data-bind="record.status"></dd><dt>提交人</dt><dd data-bind="record.submitterId"></dd><dt>处理人</dt><dd data-bind="record.assigneeId"></dd><dt>处理结果</dt><dd data-bind="record.result"></dd></dl><p data-bind="record.description"></p></section>
+
+<form data-page="complete"><h2>完成任务</h2><input type="hidden" name="id"><label>处理结果<textarea name="result" required></textarea></label><button type="submit">完成</button><p role="alert" data-bind="error"></p></form>
+</main><p role="status" data-bind="feedback"></p></template>
+</body></html>

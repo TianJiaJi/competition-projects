@@ -1,0 +1,2 @@
+import {it,expect} from 'vitest';import {observedTrend,trendMaximum,shanghaiClock} from '../../apps/ops/src/trend';
+it('客流超过旧6000上限仍完整绘制，末点包含当前业务时刻',()=>{const data=observedTrend([{time:'2026-09-13T12:00:00+08:00',count:8230},{time:'2026-09-13T14:00:00+08:00',count:9000}],'2026-09-13T13:30:00+08:00',9800);expect(data).toHaveLength(2);expect(data.at(-1)?.count).toBe(9800);expect(trendMaximum(data)).toBeGreaterThan(9800);expect(shanghaiClock('2026-09-13T05:30:00Z')).toBe('13:30');});

@@ -1,0 +1,20 @@
+.sg-scroll-host { scrollbar-width: none !important; }
+.sg-scroll-host::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+textarea, select[multiple] { scrollbar-width: thin; scrollbar-color: var(--scrollbar-native-color, var(--brand, #175f54)) transparent; }
+.sg-scroll-overlay { position: fixed; z-index: var(--scrollbar-z-index, 2000); pointer-events: none; overflow: hidden; }
+.sg-scroll-track { position: absolute; box-sizing: border-box; pointer-events: none; opacity: 0; transition: opacity 160ms; touch-action: none; user-select: none; -webkit-user-select: none; outline: none; }
+.sg-scroll-overlay[data-visible='true'] .sg-scroll-track { opacity: 1; pointer-events: auto; }
+.sg-scroll-track[hidden] { display: none; }
+.sg-scroll-track[data-axis='y'] { right: 0; width: var(--scrollbar-hit-size, 14px); }
+.sg-scroll-track[data-axis='x'] { bottom: 0; height: var(--scrollbar-hit-size, 14px); }
+.sg-scroll-thumb { position: absolute; box-sizing: border-box; border-radius: 999px; border: 1px solid var(--glass-border, #ffffff99); background: linear-gradient(145deg, #ffffff75, #ffffff08 60%), var(--scrollbar-thumb-color, color-mix(in srgb, var(--brand, #175f54) 58%, transparent)); box-shadow: inset 0 1px 1px #ffffff88, 0 1px 5px color-mix(in srgb, var(--ink, #193b35) 20%, transparent); backdrop-filter: blur(2px) saturate(1.12); -webkit-backdrop-filter: blur(2px) saturate(1.12); }
+
+.sg-scroll-track[data-axis='y'] .sg-scroll-thumb { width: var(--scrollbar-size, 6px); right: var(--scrollbar-inset, 4px); }
+.sg-scroll-track[data-axis='x'] .sg-scroll-thumb { height: var(--scrollbar-size, 6px); bottom: var(--scrollbar-inset, 4px); }
+.sg-scroll-track:focus-visible .sg-scroll-thumb { outline: 2px solid var(--scrollbar-focus-color, var(--brand, #175f54)); outline-offset: 2px; }
+@media (pointer: coarse) { .sg-scroll-overlay { --scrollbar-hit-size: 24px; } }
+@media (prefers-reduced-motion: reduce) { .sg-scroll-track { transition: none; } }
+@media (forced-colors: active) { .sg-scroll-thumb { background: ButtonText; border-color: Canvas; box-shadow: none; } }
+.sg-scroll-area { position: relative; min-height: 0; min-width: 0; overflow: auto; }
+.sg-scroll-area[data-direction='vertical'] { overflow-x: hidden; }
+.sg-scroll-area[data-direction='horizontal'] { overflow-y: hidden; }

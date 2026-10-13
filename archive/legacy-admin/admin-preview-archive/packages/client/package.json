@@ -1,0 +1,1 @@
+{"name":"@scenic/client","version":"0.1.0","private":true,"type":"module","exports":"./src/index.ts","dependencies":{"@scenic/contracts":"workspace:*","@scenic/scenic":"workspace:*"}}

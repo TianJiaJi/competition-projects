@@ -1,0 +1,1 @@
+{"name":"@scenic/visitor","version":"0.1.0","private":true,"type":"module","scripts":{"dev":"vite --host 0.0.0.0 --port 5173 --strictPort","build":"vite build"},"dependencies":{"@scenic/contracts":"workspace:*","@scenic/scenic":"workspace:*","@scenic/client":"workspace:*","@scenic/ui":"workspace:*","vue":"^3.5.21","lucide-vue-next":"^0.468.0","qrcode":"^1.5.4"}}

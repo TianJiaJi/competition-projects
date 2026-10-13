@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scenic-server
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      app: scenic-server
+  template:
+    metadata:
+      labels:
+        app: scenic-server
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+      - name: server
+        image: scenic/server:pg-target-dev
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 8787
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: '1'
+            memory: 1Gi
+        envFrom:
+        - configMapRef:
+            name: scenic-server
+        - secretRef:
+            name: scenic-server-secrets
+        volumeMounts:
+        - name: postgres-ca
+          mountPath: /run/secrets/postgres
+          readOnly: true
+        readinessProbe:
+          httpGet:
+            path: /api/v1/health/ready
+            port: http
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /api/v1/health/live
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        startupProbe:
+          tcpSocket:
+            port: http
+          failureThreshold: 30
+          periodSeconds: 5
+      volumes:
+      - name: postgres-ca
+        secret:
+          secretName: scenic-postgres-ca
+  strategy:
+    type: Recreate
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: scenic-server
+spec:
+  selector:
+    app: scenic-server
+  ports:
+  - name: http
+    port: 8787
+    targetPort: http

@@ -1,0 +1,15 @@
+{
+  "name": "青岚山境",
+  "appid": "",
+  "description": "智慧景区游客服务",
+  "versionName": "0.1.0",
+  "versionCode": "100",
+  "transformPx": false,
+  "uniStatistics": { "enable": false },
+  "h5": { "title": "青岚山境", "router": { "mode": "hash" } },
+  "mp-weixin": {
+    "appid": "touristappid",
+    "setting": { "urlCheck": false },
+    "usingComponents": true
+  }
+}

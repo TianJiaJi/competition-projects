@@ -1,0 +1,119 @@
+{
+  "pages": [
+    {
+      "path": "pages/home/index",
+      "style": {
+        "navigationBarTitleText": "青岚山境"
+      }
+    },
+    {
+      "path": "pages/guide/index",
+      "style": {
+        "navigationBarTitleText": "山水导览"
+      }
+    },
+    {
+      "path": "pages/booking/index",
+      "style": {
+        "navigationBarTitleText": "游览预约"
+      }
+    },
+    {
+      "path": "pages/me/index",
+      "style": {
+        "navigationBarTitleText": "我的"
+      }
+    },
+    {
+      "path": "pages/detail/index",
+      "style": {
+        "navigationBarTitleText": "景点详情"
+      }
+    },
+    {
+      "path": "pages/routes/index",
+      "style": {
+        "navigationBarTitleText": "路线推荐"
+      }
+    },
+    {
+      "path": "pages/orders/index",
+      "style": {
+        "navigationBarTitleText": "我的预约"
+      }
+    },
+    {
+      "path": "pages/qa/index",
+      "style": {
+        "navigationBarTitleText": "AI 问答"
+      }
+    },
+    {
+      "path": "pages/chat/index",
+      "style": {
+        "navigationBarTitleText": "游客聊天室"
+      }
+    },
+    {
+      "path": "pages/content/index",
+      "style": {
+        "navigationBarTitleText": "景区服务"
+      }
+    },
+    {
+      "path": "pages/scan/index",
+      "style": {
+        "navigationBarTitleText": "扫码识景"
+      }
+    },
+    {
+      "path": "pages/login/index",
+      "style": {
+        "navigationBarTitleText": "游客账号"
+      }
+    },
+    {
+      "path": "pages/notifications/index",
+      "style": {
+        "navigationBarTitleText": "消息通知"
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarBackgroundColor": "#EAF3EF",
+    "backgroundColor": "#EAF3EF"
+  },
+  "tabBar": {
+    "color": "#536B63",
+    "selectedColor": "#175F54",
+    "backgroundColor": "#F8FCFA",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/home/index",
+        "text": "首页",
+        "iconPath": "static/icons/house.png",
+        "selectedIconPath": "static/icons/house-active.png"
+      },
+      {
+        "pagePath": "pages/guide/index",
+        "text": "导览",
+        "iconPath": "static/icons/map.png",
+        "selectedIconPath": "static/icons/map-active.png"
+      },
+      {
+        "pagePath": "pages/booking/index",
+        "text": "预约",
+        "iconPath": "static/icons/calendar-days.png",
+        "selectedIconPath": "static/icons/calendar-days-active.png"
+      },
+      {
+        "pagePath": "pages/me/index",
+        "text": "我的",
+        "iconPath": "static/icons/user-round.png",
+        "selectedIconPath": "static/icons/user-round-active.png"
+      }
+    ]
+  }
+}

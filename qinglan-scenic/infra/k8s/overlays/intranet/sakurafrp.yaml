@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scenic-sakurafrp
+  annotations:
+    scenic.example/tunnel-local-endpoint: "127.0.0.1:31101"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: scenic-sakurafrp
+  template:
+    metadata:
+      labels:
+        app: scenic-sakurafrp
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      containers:
+      - name: frpc
+        image: natfrp.com/frpc:latest
+        imagePullPolicy: Always
+        args:
+        - --disable_log_color
+        - -f
+        - $(SAKURA_FRP_START_ARGS)
+        envFrom:
+        - secretRef:
+            name: scenic-sakurafrp-secrets
+        resources:
+          requests:
+            cpu: 25m
+            memory: 32Mi
+          limits:
+            cpu: 250m
+            memory: 128Mi

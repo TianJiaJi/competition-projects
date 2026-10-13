@@ -1,0 +1,8 @@
+# Merge into existing edge-caddy; do not create another 80/443 listener.
+m.starhusk.com, ops.starhusk.com, visitor.starhusk.com, admin.starhusk.com, gate.starhusk.com, demo.starhusk.com {
+	reverse_proxy {$SCENIC_TUNNEL_UPSTREAM} {
+		header_up Host {host}
+		header_up X-Forwarded-Proto https
+		flush_interval -1
+	}
+}

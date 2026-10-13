@@ -1,0 +1,6 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><title>navigation-layout</title></head><body>
+<template id="navigation-layout"><header><h1 data-bind="applicationName">应用名称</h1><nav><a href="#overview">总览</a><a href="#records">记录</a><a href="#settings">设置</a></nav><span data-bind="identity"></span><button data-action="logout">退出</button></header><main>
+<aside aria-label="分类导航"><button data-repeat="navigation" data-bind="label" data-action="navigate"></button></aside><section class="page-layout"><header><h2 data-bind="pageTitle"></h2><form role="search"><label>搜索<input name="query" type="text" required /></label><button>搜索</button></form></header><div data-slot="content"></div></section>
+</main><p role="status" data-bind="feedback"></p></template>
+</body></html>

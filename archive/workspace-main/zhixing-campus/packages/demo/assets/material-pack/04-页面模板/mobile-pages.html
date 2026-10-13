@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><title>mobile-pages</title></head><body>
+<template id="mobile-pages"><header><h1 data-bind="applicationName">应用名称</h1><nav><a href="#home">首页</a><a href="#services">服务</a><a href="#records">我的记录</a><a href="#me">我的</a></nav><span data-bind="identity"></span><button data-action="logout">退出</button></header><main>
+<form data-page="login"><label>账号<input name="username" type="text" required /></label><label>密码<input name="password" type="password" required /></label><button type="submit">登录</button><p role="alert" data-bind="error"></p></form>
+
+<section data-page="home"><section class="metrics" aria-label="运行指标"><article data-repeat="metrics"><h3 data-bind="label"></h3><output data-bind="value"></output><small data-bind="unit"></small></article></section><nav><a href="#request">提交请求</a><a href="#booking">空间预约</a></nav></section>
+
+<section data-page="services"><h2>设施与服务</h2><form role="search"><label>关键词<input name="query" type="text" required /></label><select name="status" aria-label="状态"><option value="">全部</option></select><button>查询</button></form><table><thead><tr><th>名称</th><th>位置</th><th>类型</th><th>状态</th><th>操作</th></tr></thead><tbody><tr data-repeat="records.services"><td data-bind="title"></td><td data-bind="location"></td><td data-bind="category"></td><td data-bind="status"></td><td><button data-action="detail">查看详情</button></td></tr></tbody></table><p data-if="empty">暂无记录</p></section>
+
+<form data-page="request"><h2>提交服务请求</h2><label>标题<input name="title" type="text" required /></label><label>设施<select name="facilityId" required><option data-repeat="facilities" data-value="id" data-bind="title"></option></select></label><label>位置<input name="location" type="text" required /></label><label>说明<textarea name="description" required></textarea></label><button type="submit">提交</button><p role="alert" data-bind="error"></p></form>
+
+<form data-page="booking"><h2>空间预约</h2><label>空间<select name="facilityId" required><option data-repeat="venues" data-value="id" data-bind="title"></option></select></label><label>日期<input name="date" type="date" required /></label><label>时段<select name="timeSlot"><option>09:00–10:00</option><option>14:00–15:00</option></select></label><label>人数<input name="count" type="number" required /></label><button type="submit">预约</button><p role="alert" data-bind="error"></p></form>
+
+<section data-page="notices"><h2>公告</h2><form role="search"><label>关键词<input name="query" type="text" required /></label><select name="status" aria-label="状态"><option value="">全部</option></select><button>查询</button></form><table><thead><tr><th>名称</th><th>位置</th><th>类型</th><th>状态</th><th>操作</th></tr></thead><tbody><tr data-repeat="records.notices"><td data-bind="title"></td><td data-bind="location"></td><td data-bind="category"></td><td data-bind="status"></td><td><button data-action="detail">查看详情</button></td></tr></tbody></table><p data-if="empty">暂无记录</p></section>
+
+<section data-page="me"><h2 data-bind="identity">用户</h2><a href="#records">我的记录</a><button data-action="logout">退出</button></section>
+
+<section data-page="assistant"><h2>常见问题</h2><details data-repeat="faq"><summary data-bind="question"></summary><p data-bind="answer"></p></details></section>
+
+<section data-page="detail"><h2 data-bind="record.title">记录详情</h2><dl><dt>位置</dt><dd data-bind="record.location"></dd><dt>状态</dt><dd data-bind="record.status"></dd><dt>提交人</dt><dd data-bind="record.submitterId"></dd><dt>处理人</dt><dd data-bind="record.assigneeId"></dd><dt>处理结果</dt><dd data-bind="record.result"></dd></dl><p data-bind="record.description"></p></section>
+
+<section data-page="records"><h2>我的记录</h2><form role="search"><label>关键词<input name="query" type="text" required /></label><select name="status" aria-label="状态"><option value="">全部</option></select><button>查询</button></form><table><thead><tr><th>名称</th><th>位置</th><th>类型</th><th>状态</th><th>操作</th></tr></thead><tbody><tr data-repeat="records.records"><td data-bind="title"></td><td data-bind="location"></td><td data-bind="category"></td><td data-bind="status"></td><td><button data-action="detail">查看详情</button><button data-action="cancel">取消预约</button><p data-bind="result"></p></td></tr></tbody></table><p data-if="empty">暂无记录</p></section>
+</main><p role="status" data-bind="feedback"></p></template>
+</body></html>

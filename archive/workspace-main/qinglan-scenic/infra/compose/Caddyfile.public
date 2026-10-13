@@ -1,0 +1,53 @@
+(app_routes) {
+	route {
+	@backend path /api /api/* /ws /ws/*
+	handle @backend {
+		reverse_proxy server:8787 {
+			flush_interval -1
+		}
+	}
+
+	@mobile host m.starhusk.com
+	handle @mobile {
+		reverse_proxy mobile:8080
+	}
+
+	@ops host ops.starhusk.com
+	handle @ops {
+		reverse_proxy ops:8080
+	}
+
+	@visitor host visitor.starhusk.com
+	handle @visitor {
+		reverse_proxy visitor:8080
+	}
+
+	@admin host admin.starhusk.com
+	handle @admin {
+		reverse_proxy admin:8080
+	}
+
+	@gate host gate.starhusk.com
+	handle @gate {
+		reverse_proxy gate:8080
+	}
+
+	@demo host demo.starhusk.com
+	handle @demo {
+		reverse_proxy demo:8080
+	}
+
+	handle {
+		respond "unknown host" 421
+	}
+	}
+}
+
+:8080 {
+	import app_routes
+}
+
+m.starhusk.com:31101, ops.starhusk.com:31101, visitor.starhusk.com:31101, admin.starhusk.com:31101, gate.starhusk.com:31101, demo.starhusk.com:31101 {
+	tls internal
+	import app_routes
+}

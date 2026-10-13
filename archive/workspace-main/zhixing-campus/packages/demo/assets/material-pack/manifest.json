@@ -1,0 +1,120 @@
+{
+  "version": "2.0.0",
+  "files": [
+    {
+      "node": "01-map",
+      "path": "material-pack/01-图片地图/M01.png",
+      "name": "M01.png",
+      "type": "image/png",
+      "size": 100204
+    },
+    {
+      "node": "01-coordinates",
+      "path": "material-pack/02-设施坐标/M03.json",
+      "name": "M03.json",
+      "type": "application/json",
+      "size": 10613
+    },
+    {
+      "node": "01-reference",
+      "path": "material-pack/03-沙盘参考/sandbox-reference.json",
+      "name": "sandbox-reference.json",
+      "type": "application/json",
+      "size": 353
+    },
+    {
+      "node": "01-reference",
+      "path": "material-pack/03-沙盘参考/R01-campus.png",
+      "name": "R01-campus.png",
+      "type": "image/png",
+      "size": 849341
+    },
+    {
+      "node": "02-pages",
+      "path": "material-pack/04-页面模板/public-pages.html",
+      "name": "public-pages.html",
+      "type": "text/html",
+      "size": 4830
+    },
+    {
+      "node": "02-pages",
+      "path": "material-pack/04-页面模板/ops-pages.html",
+      "name": "ops-pages.html",
+      "type": "text/html",
+      "size": 3089
+    },
+    {
+      "node": "02-pages",
+      "path": "material-pack/04-页面模板/mobile-pages.html",
+      "name": "mobile-pages.html",
+      "type": "text/html",
+      "size": 4751
+    },
+    {
+      "node": "02-pages",
+      "path": "material-pack/04-页面模板/staff-pages.html",
+      "name": "staff-pages.html",
+      "type": "text/html",
+      "size": 3641
+    },
+    {
+      "node": "02-pages",
+      "path": "material-pack/04-页面模板/admin-pages.html",
+      "name": "admin-pages.html",
+      "type": "text/html",
+      "size": 8407
+    },
+    {
+      "node": "02-components",
+      "path": "material-pack/05-公共组件/navigation-layout.html",
+      "name": "navigation-layout.html",
+      "type": "text/html",
+      "size": 826
+    },
+    {
+      "node": "02-components",
+      "path": "material-pack/05-公共组件/glass-metrics.html",
+      "name": "glass-metrics.html",
+      "type": "text/html",
+      "size": 849
+    },
+    {
+      "node": "02-components",
+      "path": "material-pack/05-公共组件/records-forms.html",
+      "name": "records-forms.html",
+      "type": "text/html",
+      "size": 2657
+    },
+    {
+      "node": "02-components",
+      "path": "material-pack/05-公共组件/contour-background.html",
+      "name": "contour-background.html",
+      "type": "text/html",
+      "size": 1865
+    },
+    {
+      "node": "03-sql-template",
+      "path": "material-pack/06-SQL模板/schema-and-queries.sql",
+      "name": "schema-and-queries.sql",
+      "type": "text/plain",
+      "size": 12884
+    },
+    {
+      "node": "03-sql-template",
+      "path": "material-pack/06-SQL模板/initial-records.json",
+      "name": "initial-records.json",
+      "type": "application/json",
+      "size": 14723
+    },
+    {
+      "node": "03-service-template",
+      "path": "material-pack/07-服务模板/service-contract.json",
+      "name": "service-contract.json",
+      "type": "application/json",
+      "size": 3312
+    }
+  ],
+  "outputs": [
+    "产物参考/M02.svg"
+  ]
+}

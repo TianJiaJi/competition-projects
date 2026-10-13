@@ -1,0 +1,11 @@
+m.starhusk.com, ops.starhusk.com, visitor.starhusk.com, admin.starhusk.com, gate.starhusk.com, demo.starhusk.com {
+	reverse_proxy https://{$TUNNEL_UPSTREAM} {
+		header_up Host {host}
+		header_up X-Forwarded-Proto https
+		flush_interval -1
+		transport http {
+			tls_server_name m.starhusk.com
+			tls_trusted_ca_certs /etc/caddy/scenic-root.crt
+		}
+	}
+}

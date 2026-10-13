@@ -1,0 +1,28 @@
+{
+  "caseId": "campus-projector-repair",
+  "version": "2026-10-09.1",
+  "buildings": [{ "id": "B1", "title": "明理楼" }],
+  "facilities": [
+    {
+      "id": "F4",
+      "buildingId": "B1",
+      "title": "明理楼投影设备",
+      "location": "明理楼 302"
+    }
+  ],
+  "workOrders": [
+    {
+      "id": "T1",
+      "facilityId": "F4",
+      "title": "明理楼投影画面偏色",
+      "status": "待处理",
+      "description": "明理楼 302 投影画面偏色，需要检查连接与色彩设置。",
+      "location": "明理楼 302",
+      "owner": "",
+      "result": "",
+      "category": "设备报修",
+      "date": "2026-10-09"
+    }
+  ],
+  "completionResult": "已重新连接投影信号线并校准色彩，试播画面正常。"
+}

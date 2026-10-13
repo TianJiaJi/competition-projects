@@ -1,0 +1,8 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><title>glass-metrics</title></head><body>
+<template id="glass-metrics"><header><h1 data-bind="applicationName">应用名称</h1><nav></nav><span data-bind="identity"></span><button data-action="logout">退出</button></header><main>
+<section class="metrics" aria-label="运行指标"><article data-repeat="metrics"><h3 data-bind="label"></h3><output data-bind="value"></output><small data-bind="unit"></small></article></section>
+
+<style>.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}.metrics article{border:1px solid #ffffff90;background:#ffffffbb;border-radius:14px;backdrop-filter:blur(2px);padding:20px;box-shadow:0 4px 12px #23334f14}.metrics output{font-size:32px}</style>
+</main><p role="status" data-bind="feedback"></p></template>
+</body></html>

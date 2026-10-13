@@ -1,0 +1,204 @@
+/* The 00 visitor screen follows the scenic guide's visual scale. */
+.app.public.scene-overview .liquid-glass-button--primary {
+  --glass-text-color: #fffaf4;
+  background-color: rgb(
+    var(--brand-rgb) / calc(0.7 + var(--glass-tint-opacity) * 0.2)
+  );
+  color: var(--glass-text-color);
+  border-color: color-mix(in srgb, var(--brand) 35%, #ffffff66);
+}
+.app.public.scene-overview .liquid-glass-button:focus-visible {
+  outline-color: var(--brand);
+}
+.app.public.scene-overview .liquid-glass-button--primary:focus-visible {
+  outline-color: #fffaf4;
+  box-shadow: 0 0 0 6px var(--brand-solid);
+}
+@media (min-width: 1101px) {
+  .app.public.scene-overview {
+    --community-ui-font: clamp(16px, 1.04167vw, 26px);
+    --community-ui-gap: clamp(24px, 2.1875vw, 56px);
+    font-size: var(--community-ui-font);
+  }
+  .app.public.scene-overview .stage-header.topbar {
+    inset: clamp(24px, 1.77vw, 44px) var(--community-ui-gap) auto;
+  }
+  .app.public.scene-overview .stage-identity {
+    gap: clamp(18px, 1.25vw, 30px);
+    padding: clamp(14px, 0.8333vw, 20px) clamp(18px, 1.042vw, 26px);
+  }
+  .app.public.scene-overview .stage-logo {
+    width: clamp(60px, 3.96vw, 96px);
+    height: clamp(74px, 4.635vw, 112px);
+    flex-shrink: 0;
+  }
+  .app.public.scene-overview .stage-logo svg {
+    width: 44%;
+    height: 44%;
+  }
+  .app.public.scene-overview .stage-identity h1 {
+    font-size: clamp(38px, 3.3333vw, 80px);
+    letter-spacing: 0.06em;
+    line-height: 1.2;
+    margin: 6px 0 10px;
+  }
+  .app.public.scene-overview .stage-identity .eyebrow {
+    font-size: clamp(10px, 0.677vw, 16px);
+  }
+  .app.public.scene-overview .stage-subtitle {
+    font-size: clamp(14px, 1.04167vw, 24px);
+    gap: 10px;
+  }
+  .app.public.scene-overview .stage-information {
+    width: clamp(310px, 20.625vw, 496px);
+    padding: clamp(16px, 1.04vw, 24px);
+  }
+  .app.public.scene-overview .stage-clock strong {
+    font-size: clamp(32px, 2.1875vw, 52px);
+  }
+  .app.public.scene-overview .stage-clock small,
+  .app.public.scene-overview .stage-quick-stats small {
+    font-size: clamp(13px, 0.9375vw, 22px);
+  }
+  .app.public.scene-overview .stage-weather > span {
+    font-size: clamp(13px, 0.9375vw, 22px);
+  }
+  .app.public.scene-overview .stage-weather strong {
+    font-size: clamp(25px, 1.56vw, 36px);
+  }
+  .app.public.scene-overview .stage-clock button {
+    min-height: 44px;
+    padding: 10px;
+  }
+  .app.public.scene-overview .stage-quick-stats {
+    margin-top: 17px;
+    padding-top: 17px;
+  }
+  .app.public.scene-overview .stage-quick-stats strong {
+    font-size: clamp(29px, 1.875vw, 44px);
+  }
+  .app.public.scene-overview .stage-notice {
+    left: var(--community-ui-gap);
+    top: clamp(190px, 12.2vw, 300px);
+  }
+  .app.public.scene-overview .notice-pill {
+    font-size: clamp(14px, 0.9375vw, 22px);
+    min-height: 46px;
+    padding: 10px 16px;
+  }
+  .app.public.scene-overview .notice-count,
+  .app.public.scene-overview .stage-notice > p {
+    font-size: clamp(12px, 0.7292vw, 18px);
+  }
+  .app.public.scene-overview .stage-dock {
+    gap: 6px;
+    padding: 8px;
+    bottom: clamp(24px, 2.6vh, 40px);
+  }
+  .app.public.scene-overview .stage-dock > button {
+    font-size: var(--community-ui-font);
+    min-height: clamp(76px, 4.21875vw, 102px);
+    padding: 8px 18px;
+    gap: 8px;
+  }
+  .app.public.scene-overview .stage-dock > button svg {
+    width: clamp(25px, 1.3vw, 32px);
+    height: clamp(25px, 1.3vw, 32px);
+  }
+  .app.public.scene-overview .model-immersive .model-tools {
+    left: 24px;
+    padding: 5px;
+  }
+  .app.public.scene-overview .model-tools .liquid-glass-button {
+    min-height: clamp(48px, 2.92vw, 68px);
+    width: clamp(48px, 2.92vw, 68px);
+    padding: 10px;
+  }
+  .app.public.scene-overview .model-tools svg {
+    width: 23px;
+    height: 23px;
+  }
+  .app.public.scene-overview .stage-popover,
+  .app.public.scene-overview .facility-bubble {
+    right: var(--community-ui-gap);
+    top: clamp(250px, 15.1vw, 360px);
+    width: clamp(350px, 21.875vw, 520px);
+    max-height: calc(100dvh - clamp(250px, 15.1vw, 360px) - 126px);
+    padding: clamp(20px, 1.25vw, 30px);
+    font-size: clamp(16px, 0.9375vw, 22px);
+  }
+  .app.public.scene-overview .stage-popover.bubble-notices {
+    left: var(--community-ui-gap);
+    right: auto;
+  }
+  .app.public.scene-overview .bubble-heading h2,
+  .app.public.scene-overview .facility-bubble h2 {
+    font-size: clamp(25px, 1.56vw, 36px);
+  }
+  .app.public.scene-overview .bubble-tabs button {
+    font-size: clamp(14px, 0.8333vw, 20px);
+    min-height: 44px;
+    padding: 8px 14px;
+  }
+  .app.public.scene-overview .bubble-search input {
+    font-size: clamp(16px, 0.9375vw, 22px);
+    min-height: 44px;
+  }
+  .app.public.scene-overview .bubble-records strong,
+  .app.public.scene-overview .bubble-detail {
+    font-size: clamp(16px, 0.9375vw, 22px);
+  }
+  .app.public.scene-overview .bubble-records small,
+  .app.public.scene-overview .bubble-all,
+  .app.public.scene-overview .facility-location,
+  .app.public.scene-overview .facility-bubble dt,
+  .app.public.scene-overview .facility-bubble footer {
+    font-size: clamp(13px, 0.7292vw, 18px);
+  }
+  .app.public.scene-overview .bubble-close,
+  .app.public.scene-overview .facility-bubble header button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .app.public.scene-overview .community-marker {
+    width: 36px;
+    min-height: 36px;
+    padding: 8px;
+  }
+}
+
+.app.public.scene-overview .community-marker.place-marker {
+  width: 120px;
+  min-height: 36px;
+  padding: 7px 10px;
+  gap: 5px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.app.public.scene-overview .place-marker svg {
+  flex-shrink: 0;
+}
+
+.app.public.scene-overview .stage-dock-divider {
+  width: 1px;
+  height: 38px;
+  background: var(--line);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+.app.public.scene-overview .stage-dock > button {
+  min-width: clamp(76px, 4.375vw, 112px);
+}
+@media (max-width: 650px) {
+  .app.public.scene-overview .stage-dock {
+    max-width: calc(100vw - 24px);
+    overflow-x: auto;
+    justify-content: flex-start;
+  }
+  .app.public.scene-overview .stage-dock > button {
+    flex-shrink: 0;
+  }
+  .app.public.scene-overview .stage-dock > button {
+    min-width: 56px;
+  }
+}

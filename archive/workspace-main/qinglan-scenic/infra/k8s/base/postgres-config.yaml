@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: scenic-postgres-config
+data:
+  pg_hba.conf: |
+    # Unix sockets are local to the PostgreSQL pod. Network clients must use TLS.
+    local all all trust
+    hostssl all all 0.0.0.0/0 scram-sha-256
+    hostssl all all ::/0 scram-sha-256
+    hostnossl all all 0.0.0.0/0 reject
+    hostnossl all all ::/0 reject
