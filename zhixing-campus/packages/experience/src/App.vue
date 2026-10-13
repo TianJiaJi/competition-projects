@@ -15,8 +15,6 @@ import {
   createState,
   metrics,
   createRecord,
-  claim,
-  complete,
   type Collection,
   type RecordItem,
 } from "@scene/domain";
@@ -54,6 +52,7 @@ import RecordList from "./components/RecordList.vue";
 import Editor from "./components/Editor.vue";
 import StatusTag from "./components/StatusTag.vue";
 import PublicStage from "./components/PublicStage.vue";
+import TeacherWorkspace from "./components/TeacherWorkspace.vue";
 const ModelBrowser = defineAsyncComponent({
   loader: () => import("./components/ModelBrowser.vue"),
   errorComponent: defineComponent({
@@ -73,8 +72,7 @@ const bookingClient = createBookingClient(import.meta.env.VITE_BOOKING_API_URL);
 const sharedBookings = ref<BookingRequest[]>([]);
 const bookingError = ref("");
 const bookingsLoading = ref(false);
-const reviewBusy = ref(false);
-const reviewReason = ref("");
+
 function bookingRecord(booking: BookingRequest): RecordItem {
   return {
     id: booking.id,
@@ -103,33 +101,13 @@ async function refreshBookings() {
   }
 }
 const selectedBooking = computed(() => sharedBookings.value.find((item) => item.id === selected.value?.id));
-async function reviewBooking(decision: "approve" | "reject") {
-  if (!selectedBooking.value || !state.identity || reviewBusy.value) return;
-  if (decision === "reject" && !reviewReason.value.trim()) {
-    bookingError.value = "拒绝申请时请填写原因";
-    return;
-  }
-  reviewBusy.value = true;
-  bookingError.value = "";
-  try {
-    const updated = await bookingClient.review(
-      selectedBooking.value.id,
-      decision,
-      state.identity,
-      reviewReason.value.trim(),
-    );
-    sharedBookings.value = sharedBookings.value.map((item) => item.id === updated.id ? updated : item);
-    selected.value = bookingRecord(updated);
-    reviewReason.value = "";
-    inform(decision === "approve" ? "预约已通过" : "预约已拒绝");
-  } catch (cause) {
-    bookingError.value = cause instanceof Error ? cause.message : "审核失败";
-    if (bookingError.value.includes("已处理")) await refreshBookings();
-  } finally {
-    reviewBusy.value = false;
-  }
-}
 function currentPage() {
+  if (terminal === "staff") {
+    const requested = location.hash.slice(2) || "overview";
+    if (["overview", "teaching", "approvals", "profile"].includes(requested)) return requested;
+    history.replaceState(null, "", location.pathname + location.search + "#/overview");
+    return "overview";
+  }
   if (terminal === "ops") {
     if (location.hash && location.hash !== "#/overview")
       history.replaceState(
@@ -183,8 +161,6 @@ const selected = ref<RecordItem | null>(null),
 const menuOpen = ref(false);
 const toast = ref("");
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
-const result = ref(""),
-  error = ref("");
 const credentials = reactive({
   username: terminal === "admin" ? "admin01" : "staff01",
   password: "123456",
@@ -199,7 +175,7 @@ const title = computed(() =>
         public: "空间与生活",
         ops: "运行总览",
         admin: "工作台",
-        staff: "今日任务",
+        staff: "教学工作台",
         preview: "组件与交互",
       }[terminal]
     : page.value === "venues"
@@ -223,10 +199,10 @@ const nav = computed(() =>
       : terminal === "ops"
         ? [{ id: "overview", label: "运行总览" }]
         : [
-            { id: "overview", label: "今日任务" },
-            { id: "tasks", label: "任务列表" },
-            { id: "inspections", label: "巡检计划" },
-            { id: "history", label: "历史记录" },
+            { id: "overview", label: "工作台" },
+            { id: "teaching", label: "教学" },
+            { id: "approvals", label: "审批" },
+            { id: "profile", label: "我的" },
           ],
 );
 const figures = computed(() => metrics(state, scenario));
@@ -371,16 +347,18 @@ function login() {
     credentials.password === "123456"
   ) {
     state.identity = terminal === "admin" ? "管理员" : "陈越";
+    if (terminal === "staff") sessionStorage.setItem("zhixing:teacher-session", state.identity);
     loginError.value = "";
-  } else loginError.value = "账号或密码不正确，请使用页面所示的演示账号";
+  } else loginError.value = "账号或密码不正确，请重新输入";
+}
+function logout() {
+  state.identity = null;
+  if (terminal === "staff") sessionStorage.removeItem("zhixing:teacher-session");
 }
 function select(item: RecordItem) {
   selected.value = item;
   editing.value = false;
-  result.value = "";
-  error.value = "";
   bookingError.value = "";
-  reviewReason.value = "";
 }
 function save(input: Omit<RecordItem, "id">) {
   if (selected.value) Object.assign(selected.value, input);
@@ -390,13 +368,9 @@ function save(input: Omit<RecordItem, "id">) {
   editing.value = false;
   inform("已保存");
 }
-function finish() {
-  if (!selected.value) return;
-  error.value = complete(selected.value, result.value);
-  if (!error.value) inform("处理结果已记录");
-}
 let stopScroll: (() => void) | undefined;
 onMounted(() => {
+  if (terminal === "staff" && sessionStorage.getItem("zhixing:teacher-session") === "陈越") state.identity = "陈越";
   window.addEventListener("hashchange", sync);
   stopScroll = installScrollbars();
 });
@@ -461,7 +435,7 @@ onBeforeUnmount(() => {
         >
         <div class="topbar-center">
           <span class="live-dot" />{{ terminalLabel
-          }}<span class="divider" />2026年9月25日 · 星期五
+          }}<span class="divider" />{{ new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai', year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }).format(new Date()) }}
         </div>
         <div class="topbar-actions">
           <GlassButton
@@ -473,7 +447,7 @@ onBeforeUnmount(() => {
           ><GlassButton
             v-if="state.identity"
             aria-label="退出登录"
-            @click="state.identity = null"
+            @click="logout"
             ><LogOut :size="17" /></GlassButton
           ><GlassButton
             v-if="!locked && terminal !== 'preview' && terminal !== 'staff'"
@@ -494,7 +468,7 @@ onBeforeUnmount(() => {
         </section>
         <GlassSurface class="login-card" :radius="24" :tint-opacity="0.6"
           ><p class="eyebrow">WELCOME BACK</p>
-          <h2>{{ terminal === "admin" ? "管理中心" : "工作人员" }}登录</h2>
+          <h2>{{ terminal === "admin" ? "管理中心" : "教师工作台" }}登录</h2>
           <p class="muted">继续处理今天的每一件小事。</p>
           <form class="editor" @submit.prevent="login">
             <label
@@ -514,9 +488,7 @@ onBeforeUnmount(() => {
               >进入工作台 <ArrowRight :size="17"
             /></GlassButton>
           </form>
-          <p class="demo-account">
-            演示账号 {{ terminal === "admin" ? "admin01" : "staff01" }} / 123456
-          </p></GlassSurface
+</GlassSurface
         >
       </div>
       <template v-else>
@@ -580,13 +552,14 @@ onBeforeUnmount(() => {
             @theme="dark = !dark"
             @mode="chartMode = $event"
           />
+          <TeacherWorkspace v-else-if="terminal === 'staff'" :page="page" :identity="state.identity!" @navigate="go" />
           <template v-else-if="page === 'overview' && terminal === 'admin'">
             <div class="section-heading">
               <div>
                 <p class="eyebrow">YOUR DAILY WORKSPACE</p>
                 <h1>早安，{{ state.identity }}。</h1>
                 <p class="muted">每一件小事，都值得被认真对待。</p>
-                <button class="text-button" @click="go('bookings')">教室预约待审核 {{ sharedBookings.filter((item) => item.status === 'pending').length }} 条 <ArrowUpRight :size="17" /></button>
+                <button class="text-button" @click="go('bookings')">查看教室预约记录 {{ sharedBookings.length }} 条（教师终审） <ArrowUpRight :size="17" /></button>
               </div>
               <span class="date-seal">09<small>SEPTEMBER / 25</small></span>
             </div>
@@ -673,44 +646,6 @@ onBeforeUnmount(() => {
                 <ScenicChart :option="chart" label="公共能耗趋势" /></div
             ></GlassSurface>
           </template>
-          <template v-else-if="page === 'overview' && terminal === 'staff'"
-            ><section class="staff-welcome">
-              <p class="eyebrow">EVERY DETAIL MATTERS</p>
-              <h1>早安，{{ state.identity }}。</h1>
-              <p>今天也一起，守护{{ scenario.location }}的美好。</p>
-              <div class="staff-counts">
-                <span
-                  ><strong>{{
-                    activeTasks.filter((r) => r.status === "待处理").length
-                  }}</strong
-                  >待领取</span
-                ><span
-                  ><strong>{{
-                    activeTasks.filter((r) => r.status === "处理中").length
-                  }}</strong
-                  >处理中</span
-                ><span
-                  ><strong>{{
-                    state.records.tasks.filter((r) => r.status === "已完成")
-                      .length +
-                    state.records.inspections.filter(
-                      (r) => r.status === "已完成",
-                    ).length
-                  }}</strong
-                  >已完成</span
-                >
-              </div>
-            </section>
-            <div class="panel-title">
-              <h2>今日任务</h2>
-              <span class="muted">按状态处理</span>
-            </div>
-            <RecordList
-              :items="activeTasks"
-              title="今日任务"
-              cards
-              @select="select"
-          /></template>
           <template v-else-if="terminal === 'preview'"
             ><div class="section-heading">
               <div>
@@ -769,11 +704,7 @@ onBeforeUnmount(() => {
             ><div class="section-heading">
               <div>
                 <p class="eyebrow">
-                  {{
-                    terminal === "staff"
-                      ? "SERVICE & CARE"
-                      : "SPACES · PEOPLE · EVERYDAY"
-                  }}
+                  SPACES · PEOPLE · EVERYDAY
                 </p>
                 <h1>{{ page === "history" ? "历史记录" : title }}</h1>
                 <p class="muted">
@@ -786,7 +717,7 @@ onBeforeUnmount(() => {
               </div>
             </div>
             <div v-if="terminal === 'admin' && page === 'bookings'" class="booking-toolbar">
-              <p>学生提交后显示为待审核；审核结果会同步到学生端。</p>
+              <p>仅供查阅。教室预约由带班教师终审，学生端可查看结果。</p>
               <GlassButton :disabled="bookingsLoading" @click="refreshBookings">{{ bookingsLoading ? '正在刷新…' : '刷新申请' }}</GlassButton>
             </div>
             <p v-if="terminal === 'admin' && page === 'bookings' && bookingError" class="error" role="alert">{{ bookingError }}</p>
@@ -794,7 +725,7 @@ onBeforeUnmount(() => {
               :key="page"
               :items="items"
               :title="title"
-              :cards="terminal === 'public' || terminal === 'staff'"
+              :cards="terminal === 'public'"
               :editable="terminal === 'admin' && page !== 'bookings'"
               @select="select"
               @create="
@@ -866,41 +797,14 @@ onBeforeUnmount(() => {
           <dt>申请人</dt><dd>{{ selectedBooking.owner }}</dd>
           <dt>时段</dt><dd>{{ selectedBooking.time }}</dd>
           <dt>人数</dt><dd>{{ selectedBooking.count }} 人</dd>
-          <dt>使用说明</dt><dd>{{ selectedBooking.purpose }}</dd>
+          <dt>活动名称</dt><dd>{{ selectedBooking.activity || '旧版未填写' }}</dd>
+          <dt>使用用途</dt><dd>{{ selectedBooking.purpose }}</dd>
+          <dt>联系电话</dt><dd>{{ selectedBooking.phone || '旧版未填写' }}</dd>
+          <dt>补充说明</dt><dd>{{ selectedBooking.note || '无' }}</dd>
           <template v-if="selectedBooking.reviewer"><dt>审核人</dt><dd>{{ selectedBooking.reviewer }}</dd></template>
         </dl>
-        <div v-if="selectedBooking.status === 'pending'" class="editor booking-review">
-          <label>拒绝原因（拒绝时必填）<textarea v-model="reviewReason" aria-label="拒绝原因" rows="3" placeholder="填写原因后可拒绝申请" /></label>
-          <p v-if="bookingError" class="error" role="alert">{{ bookingError }}</p>
-          <div class="booking-actions">
-            <GlassButton class="primary" :disabled="reviewBusy" @click="reviewBooking('approve')">{{ reviewBusy ? '处理中…' : '通过预约' }}</GlassButton>
-            <GlassButton :disabled="reviewBusy" @click="reviewBooking('reject')">拒绝申请</GlassButton>
-          </div>
-        </div>
+
       </template>
-      <div v-if="terminal === 'staff'" class="editor">
-        <GlassButton
-          v-if="selected.status === '待处理'"
-          class="primary"
-          @click="
-            claim(selected!, state.identity!);
-            inform('已领取任务');
-          "
-          >领取任务</GlassButton
-        ><template v-else-if="selected.status === '处理中'"
-          ><label
-            >处理结果<textarea
-              v-model="result"
-              aria-label="处理结果"
-              rows="4"
-              placeholder="记录现场检查和处理情况"
-            />
-          </label>
-          <p v-if="error" role="alert" class="error">{{ error }}</p>
-          <GlassButton class="primary" @click="finish"
-            >提交处理结果 <Check :size="17" /></GlassButton
-        ></template>
-      </div>
       <GlassButton
         v-if="terminal === 'admin' && page !== 'bookings'"
         class="primary"

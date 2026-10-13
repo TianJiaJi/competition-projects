@@ -1,4 +1,4 @@
 <script setup lang="ts">
-import ServicePage from "../../components/ServicePage.vue";
+import BookingPage from "../../components/BookingPage.vue";
 </script>
-<template><ServicePage page="booking" /></template>
+<template><BookingPage /></template>

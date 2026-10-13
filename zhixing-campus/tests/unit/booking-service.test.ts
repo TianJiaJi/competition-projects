@@ -1,70 +1,152 @@
-import { afterEach, expect, it } from "vitest";
-import { mkdtempSync, rmSync } from "node:fs";
+import { afterEach, beforeEach, expect, it } from "vitest";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Server } from "node:http";
 import { createBookingServer } from "../../scripts/booking-service.mjs";
-import { scenario } from "../../scenario/config";
+import { demoClass } from "../../scenario/teaching";
 import { todayInShanghai } from "../../packages/bookings/src";
 
-let server: Server | undefined;
-let directory: string | undefined;
+let server: Server;
+let directory: string;
+let dataFile: string;
+let base: string;
+const after = (days: number) => {
+  const date = new Date(`${todayInShanghai()}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+};
+async function start() {
+  server = createBookingServer({ dataFile });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  if (!address || typeof address === "string") throw new Error("测试服务未启动");
+  base = `http://127.0.0.1:${address.port}`;
+}
+async function call(path: string, method = "GET", body?: unknown) {
+  const response = await fetch(base + path, {
+    method, headers: body ? { "Content-Type": "application/json" } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  return { status: response.status, payload: await response.json() };
+}
+const booking = (owner = "林悦", date = after(2)) => ({
+  facilityId: "F1", owner, date, time: "09:00–10:00", count: 3,
+  activity: "课程讨论", purpose: "小组研讨与汇报", phone: "13900001001", note: "准备白板",
+});
+const leave = (owner = "林悦", date = after(2)) => ({
+  owner, type: "病假", startDate: date, startTime: "13:20:30", endDate: after(3), endTime: "08:10:20",
+  reason: "发烧就医需要请假休息", phone: "13900001001",
+  leavingCampus: true, leavingCity: false, destination: "医院就诊", address: "人民医院门诊部",
+  emergencyName: "林女士", emergencyPhone: "13900001111", nature: "日常请假", cc: ["陈越"], confirmed: true,
+});
+beforeEach(async () => {
+  directory = mkdtempSync(join(tmpdir(), "campus-requests-"));
+  dataFile = join(directory, "bookings.json");
+  await start();
+});
 afterEach(async () => {
-  if (server) await new Promise<void>((resolve) => server!.close(() => resolve()));
-  if (directory) rmSync(directory, { recursive: true, force: true });
-  server = undefined;
-  directory = undefined;
+  await new Promise<void>((resolve) => server.close(() => resolve()));
+  rmSync(directory, { recursive: true, force: true });
 });
 
-it("学生申请、管理员审核、冲突检查、取消与持久化", async () => {
-  directory = mkdtempSync(join(tmpdir(), "campus-bookings-"));
-  const dataFile = join(directory, "bookings.json");
-  server = createBookingServer({ dataFile });
-  await new Promise<void>((resolve) => server!.listen(0, "127.0.0.1", resolve));
-  const address = server!.address();
-  if (!address || typeof address === "string") throw new Error("测试服务未启动");
-  let base = `http://127.0.0.1:${address.port}`;
-  async function call(path: string, method = "GET", body?: unknown) {
-    const response = await fetch(base + path, {
-      method,
-      headers: body ? { "Content-Type": "application/json" } : undefined,
-      body: body ? JSON.stringify(body) : undefined,
-    });
-    return { status: response.status, payload: await response.json() };
-  }
-  const date = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
-  const input = {
-    facilityId: scenario.seed.facilities.find((item) => item.capacity && item.status === "正常")!.id,
-    owner: "林悦",
-    date,
-    time: "09:00–10:00",
-    count: 3,
-    purpose: "小组讨论",
-  };
-  expect((await call("/api/bookings", "POST", { ...input, facilityId: "F2" })).status).toBe(400);
-  expect((await call("/api/bookings", "POST", { ...input, date: "2020-01-01" })).status).toBe(400);
-  expect((await call("/api/bookings", "POST", { ...input, date: "2026-02-30" })).status).toBe(400);
+it("校验完整预约、可用性、班级审核、占用冲突、取消与重启持久化", async () => {
   expect(todayInShanghai()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-  const created = await call("/api/bookings", "POST", input);
+  expect((await call("/api/bookings", "POST", { ...booking(), facilityId: "F2" })).status).toBe(400);
+  expect((await call("/api/bookings", "POST", { ...booking(), date: "2026-02-30" })).status).toBe(400);
+  expect((await call("/api/bookings", "POST", { ...booking(), date: after(14) })).status).toBe(400);
+  expect((await call("/api/bookings", "POST", { ...booking(), count: 99 })).status).toBe(400);
+  expect((await call("/api/bookings", "POST", { ...booking(), activity: "" })).status).toBe(400);
+  expect((await call("/api/bookings", "POST", { ...booking(), phone: "1" })).status).toBe(400);
+  const date = after(2);
+  const path = `/api/bookings/availability?facilityId=F1&date=${date}`;
+  expect((await call(path)).payload.data[0]).toMatchObject({ available: true, pending: 0 });
+  const created = await call("/api/bookings", "POST", booking());
   expect(created.status).toBe(201);
-  expect(created.payload.data.status).toBe("pending");
-  const id = created.payload.data.id as string;
-  expect((await call("/api/bookings", "POST", input)).status).toBe(409);
-  expect((await call(`/api/bookings/${id}`, "PATCH", { action: "reject", reviewer: "管理员" })).status).toBe(400);
-  expect((await call(`/api/bookings/${id}`, "PATCH", { action: "approve", reviewer: "管理员" })).payload.data.status).toBe("approved");
-  const second = await call("/api/bookings", "POST", { ...input, owner: "陈晨" });
+  expect(created.payload.data).toMatchObject({ status: "pending", classId: demoClass.id, activity: "课程讨论" });
+  const id = created.payload.data.id;
+  expect((await call(path)).payload.data[0]).toMatchObject({ available: true, pending: 1 });
+  expect((await call("/api/bookings", "POST", booking())).status).toBe(409);
+  const second = await call("/api/bookings", "POST", booking("陈晨"));
   expect(second.status).toBe(201);
-  expect((await call(`/api/bookings/${second.payload.data.id}`, "PATCH", { action: "approve", reviewer: "管理员" })).status).toBe(409);
-  expect((await call(`/api/bookings/${id}`, "PATCH", { action: "cancel", owner: "其他人" })).status).toBe(403);
+  expect((await call("/api/bookings?teacher=%E9%99%88%E8%B6%8A")).payload.data).toHaveLength(2);
+  expect((await call(`/api/bookings/${id}`, "PATCH", { action: "approve", reviewer: "管理员" })).status).toBe(403);
+  expect((await call(`/api/bookings/${id}`, "PATCH", { action: "reject", reviewer: "陈越" })).status).toBe(400);
+  expect((await call(`/api/bookings/${id}`, "PATCH", { action: "approve", reviewer: "陈越" })).payload.data.status).toBe("approved");
+  expect((await call(`/api/bookings/${id}`, "PATCH", { action: "approve", reviewer: "陈越" })).status).toBe(409);
+  expect((await call(path)).payload.data[0]).toMatchObject({ available: false, reason: "已被预约" });
+  expect((await call("/api/bookings", "POST", booking("顾宁"))).status).toBe(409);
+  expect((await call(`/api/bookings/${second.payload.data.id}`, "PATCH", { action: "approve", reviewer: "陈越" })).status).toBe(409);
+  expect((await call(`/api/bookings/${id}`, "PATCH", { action: "cancel", owner: "陈晨" })).status).toBe(403);
   expect((await call(`/api/bookings/${id}`, "PATCH", { action: "cancel", owner: "林悦" })).payload.data.status).toBe("cancelled");
-  expect((await call(`/api/bookings/${second.payload.data.id}`, "PATCH", { action: "reject", reviewer: "管理员", reason: "教室设备维护" })).payload.data.reviewReason).toBe("教室设备维护");
-  const mine = await call("/api/bookings?owner=%E9%99%88%E6%99%A8");
-  expect(mine.payload.data).toHaveLength(1);
-  await new Promise<void>((resolve) => server!.close(() => resolve()));
-  server = createBookingServer({ dataFile });
-  await new Promise<void>((resolve) => server!.listen(0, "127.0.0.1", resolve));
-  const restartedAddress = server.address();
-  if (!restartedAddress || typeof restartedAddress === "string") throw new Error("测试服务未重启");
-  base = `http://127.0.0.1:${restartedAddress.port}`;
+  expect((await call(`/api/bookings/${second.payload.data.id}`, "PATCH", { action: "reject", reviewer: "陈越", reason: "与课程冲突" })).payload.data.reviewReason).toBe("与课程冲突");
+  await new Promise<void>((resolve) => server.close(() => resolve()));
+  await start();
+  expect((await call("/api/bookings?owner=%E6%9E%97%E6%82%A6")).payload.data[0].status).toBe("cancelled");
+});
+
+it("学生请假秒级/跨天、重叠、拒绝与班级边界", async () => {
+  expect((await call("/api/leaves", "POST", { ...leave(), endDate: after(1) })).status).toBe(400);
+  expect((await call("/api/leaves", "POST", { ...leave(), reason: "短" })).status).toBe(400);
+  expect((await call("/api/leaves", "POST", { ...leave(), startDate: after(30) })).status).toBe(400);
+  expect((await call("/api/leaves", "POST", { ...leave(), confirmed: false })).status).toBe(400);
+  expect((await call("/api/leaves", "POST", { ...leave(), emergencyName: "" })).status).toBe(400);
+  expect((await call("/api/leaves", "POST", { ...leave(), address: "" })).status).toBe(400);
+  expect((await call("/api/leaves", "POST", { ...leave(), emergencyPhone: "123" })).status).toBe(400);
+  expect((await call("/api/leaves", "POST", { ...leave(), cc: ["其他教师"] })).status).toBe(400);
+  expect((await call("/api/leaves", "POST", { ...leave(), leavingCampus: false, leavingCity: true })).status).toBe(400);
+  expect((await call("/api/leaves", "POST", { ...leave(), startTime: "24:00:00" })).status).toBe(400);
+  expect((await call("/api/leaves", "POST", { ...leave(), endTime: "12:60:00" })).status).toBe(400);
+  expect((await call("/api/leaves", "POST", { ...leave(), startTime: "12:00:60" })).status).toBe(400);
+  expect((await call("/api/leaves", "POST", { ...leave(), endDate: after(2), endTime: "13:20:30" })).status).toBe(400);
+  const created = await call("/api/leaves", "POST", leave());
+  expect(created.status).toBe(201);
+  expect(created.payload.data).toMatchObject({ startTime: "13:20:30", endTime: "08:10:20" });
+  expect(created.payload.data).toMatchObject({ emergencyName: "林女士", address: "人民医院门诊部", confirmed: true, cc: ["陈越"] });
+  const id = created.payload.data.id;
+  expect((await call("/api/leaves", "POST", { ...leave(), startDate: after(3), startTime: "08:10:19", endTime: "09:00:00" })).status).toBe(409);
+  const other = await call("/api/leaves", "POST", leave("赵明"));
+  expect(other.status).toBe(201);
+  expect((await call("/api/leaves?teacher=%E9%99%88%E8%B6%8A")).payload.data).toHaveLength(1);
+  expect((await call(`/api/leaves/${other.payload.data.id}`, "PATCH", { action: "approve", reviewer: "陈越" })).status).toBe(403);
+  expect((await call(`/api/leaves/${id}`, "PATCH", { action: "reject", reviewer: "陈越" })).status).toBe(400);
+  expect((await call(`/api/leaves/${id}`, "PATCH", { action: "approve", reviewer: "陈越" })).payload.data.status).toBe("approved");
+  expect((await call(`/api/leaves/${id}`, "PATCH", { action: "cancel", owner: "林悦" })).payload.data.status).toBe("cancelled");
+  const again = await call("/api/leaves", "POST", leave());
+  expect(again.status).toBe(201);
+  expect((await call(`/api/leaves/${again.payload.data.id}`, "PATCH", { action: "reject", reviewer: "陈越", reason: "请补充材料" })).payload.data.reviewReason).toBe("请补充材料");
+  await new Promise<void>((resolve) => server.close(() => resolve()));
+  await start();
+  expect((await call("/api/leaves?owner=%E6%9E%97%E6%82%A6")).payload.data).toHaveLength(2);
+  const onCampus = await call("/api/leaves", "POST", { ...leave("林悦", after(5)), endDate: after(5), endTime: "18:00:00", leavingCampus: false, leavingCity: false, destination: "", address: "", reason: "学习期间身体不适需要休息" });
+  expect(onCampus.status).toBe(201);
+  expect(onCampus.payload.data).toMatchObject({ leavingCampus: false, address: "" });
+});
+
+it("旧预约不丢失；未知班级只能在管理员列表只读展示", async () => {
+  await new Promise<void>((resolve) => server.close(() => resolve()));
+  const record = { id: "BR-aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", owner: "林悦", facilityId: "F1", venue: "图书馆研讨室", date: after(2), time: "14:00–15:00", count: 2, purpose: "旧版讨论", status: "pending", createdAt: "2026-01-01", updatedAt: "2026-01-01" };
+  writeFileSync(dataFile, JSON.stringify([record, { ...record, id: "BR-bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", owner: "未知学生" }]));
+  await start();
   expect((await call("/api/bookings")).payload.data).toHaveLength(2);
+  expect((await call("/api/bookings?teacher=%E9%99%88%E8%B6%8A")).payload.data).toHaveLength(1);
+  expect((await call(`/api/bookings/${record.id}`, "PATCH", { action: "reject", reviewer: "陈越", reason: "材料不足" })).status).toBe(200);
+  expect((await call(`/api/bookings/BR-bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb`, "PATCH", { action: "approve", reviewer: "陈越" })).status).toBe(403);
+  expect(JSON.parse(readFileSync(dataFile, "utf8"))).toHaveLength(2);
+});
+
+it("秒级区间允许首尾衔接，阻止一秒重叠并兼容旧请假", async () => {
+  const first = await call('/api/leaves', 'POST', { ...leave(), endDate: after(2), endTime: '14:00:00' });
+  expect(first.status).toBe(201);
+  const adjacent = await call('/api/leaves', 'POST', { ...leave(), startTime: '14:00:00', endDate: after(2), endTime: '15:00:00' });
+  expect(adjacent.status).toBe(201);
+  expect((await call('/api/leaves', 'POST', { ...leave(), startTime: '13:59:59', endDate: after(2), endTime: '15:00:01' })).status).toBe(409);
+  await new Promise<void>((resolve) => server.close(() => resolve()));
+  writeFileSync(join(directory, 'leave-requests.json'), JSON.stringify([{
+    ...leave(), startTime: undefined, endTime: undefined, startPeriod: '下午', endPeriod: '上午',
+    id: 'LV-aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', status: 'approved', createdAt: '2026-01-01', updatedAt: '2026-01-01',
+  }]));
+  await start();
+  expect((await call('/api/leaves?owner=%E6%9E%97%E6%82%A6')).payload.data).toHaveLength(1);
+  expect((await call('/api/leaves', 'POST', { ...leave(), startTime: '12:00:01', endDate: after(2), endTime: '12:00:02' })).status).toBe(409);
 });

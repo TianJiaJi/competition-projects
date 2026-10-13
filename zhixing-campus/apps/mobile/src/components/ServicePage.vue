@@ -11,11 +11,13 @@ import {
   type RecordItem,
 } from "@scene/domain";
 import {
-  bookingSlots,
   bookingStatusLabel,
+  leaveStatusLabel,
+  formatLeaveRange,
   createBookingClient,
   todayInShanghai,
   type BookingRequest,
+  type LeaveRequest,
 } from "@scene/bookings";
 // #ifdef H5
 import { enhanceH5Accessibility } from "../platform";
@@ -37,18 +39,12 @@ const form = reactive({
   description: "",
   contact: "",
   date: todayInShanghai(),
-  time: "09:00–10:00",
-  count: "1",
-  venue: Math.max(
-    0,
-    state.records.facilities
-      .filter((r) => r.capacity && r.status === "正常" && ["研讨空间", "教学空间"].includes(r.category))
-      .findIndex((r) => r.id === selection.id),
-  ),
+
 });
 const error = ref("");
 const bookingClient = createBookingClient(import.meta.env.VITE_BOOKING_API_URL);
 const sharedBookings = ref<BookingRequest[]>([]);
+const sharedLeaves = ref<LeaveRequest[]>([]);
 const bookingsLoading = ref(false);
 const submitting = ref(false);
 const cancellingId = ref("");
@@ -57,7 +53,9 @@ async function refreshBookings() {
   bookingsLoading.value = true;
   error.value = "";
   try {
-    sharedBookings.value = await bookingClient.list(state.identity);
+    [sharedBookings.value, sharedLeaves.value] = await Promise.all([
+      bookingClient.list(state.identity), bookingClient.listLeaves(state.identity),
+    ]);
   } catch (cause) {
     error.value = cause instanceof Error ? cause.message : "预约记录加载失败";
   } finally {
@@ -78,7 +76,7 @@ const titles: Record<string, string> = {
   me: "我的",
   assistant: "服务助手",
   detail: "服务详情",
-  login: `${scenario.person}登录`,
+  login: "学生登录",
   records: "我的服务记录",
 };
 const title = computed(() => titles[props.page] ?? "服务");
@@ -92,21 +90,33 @@ const facilities = computed(() =>
     `${r.title}${r.location}`.includes(query.value),
   ),
 );
-const venues = computed(() =>
-  state.records.facilities.filter((r) => r.capacity && r.status === "正常" && ["研讨空间", "教学空间"].includes(r.category)),
-);
-const records = computed<Array<RecordItem & { bookingId?: string; reviewReason?: string }>>(() => [
+const records = computed<Array<RecordItem & { bookingId?: string; leaveId?: string; reviewReason?: string; reviewer?: string; timeRange?: string }>>(() => [
   ...sharedBookings.value.map((booking) => ({
     id: booking.id,
     bookingId: booking.id,
-    title: `${booking.venue}预约`,
+    title: booking.activity || `${booking.venue}预约`,
     location: booking.venue,
     category: "教室预约",
-    description: `${booking.date} ${booking.time}，${booking.count}人。${booking.purpose}`,
+    description: `${booking.date} ${booking.time} · ${booking.count}人 · ${booking.purpose}${booking.note ? ` · ${booking.note}` : ''}${booking.phone ? ` · 联系电话 ${booking.phone}` : ''}`,
     status: bookingStatusLabel[booking.status],
     date: booking.date,
     owner: booking.owner,
     reviewReason: booking.reviewReason,
+    reviewer: booking.reviewer,
+  })),
+  ...sharedLeaves.value.map((leave) => ({
+    id: leave.id,
+    leaveId: leave.id,
+    title: `${leave.type}申请`,
+    location: "学生请假",
+    timeRange: formatLeaveRange(leave),
+    category: "学生请假",
+    description: `${leave.reason}${leave.leavingCampus ? ` · ${leave.destination} ${leave.address}` : ''}`,
+    status: leaveStatusLabel[leave.status],
+    date: leave.startDate,
+    owner: leave.owner,
+    reviewReason: leave.reviewReason,
+    reviewer: leave.reviewer,
   })),
   ...[...state.records.tasks, ...state.records.visitors].filter((r) => r.owner === state.identity),
 ]);
@@ -126,99 +136,54 @@ function auth() {
   navigate("login");
   return false;
 }
+function signOut() {
+  state.identity = null;
+  uni.removeStorageSync("zhixing:student-session");
+  notify("已退出登录");
+}
 function signIn() {
   if (login.username !== "user01" || login.password !== "123456") {
-    error.value = "请使用演示账号 user01 / 123456";
+    error.value = "账号或密码不正确，请重新输入";
     return;
   }
   state.identity = "林悦";
+  uni.setStorageSync("zhixing:student-session", "林悦");
   notify("登录成功");
   back();
 }
-async function submit() {
-  if (!auth()) return;
-  if (submitting.value) return;
-  error.value = "";
-  if (props.page === "booking") {
-    const venue = venues.value[form.venue];
-    if (!venue) {
-      error.value = "请选择可预约教室";
-      return;
-    }
-    if (
-      !/^\d+$/.test(form.count) ||
-      +form.count < 1 ||
-      +form.count > (venue.capacity ?? 1)
-    ) {
-      error.value = `使用人数应为 1–${venue.capacity}`;
-      return;
-    }
-    if (!form.date || form.date < todayInShanghai()) {
-      error.value = "预约日期不能早于今天";
-      return;
-    }
-    if (form.description.trim().length < 2 || form.description.trim().length > 200) {
-      error.value = "请填写 2–200 字的使用说明";
-      return;
-    }
-    submitting.value = true;
-    try {
-      await bookingClient.create({
-        facilityId: venue.id,
-        owner: state.identity!,
-        date: form.date,
-        time: form.time,
-        count: Number(form.count),
-        purpose: form.description.trim(),
-      });
-    } catch (cause) {
-      error.value = cause instanceof Error ? cause.message : "预约提交失败";
-      return;
-    } finally {
-      submitting.value = false;
-    }
-  } else {
-    error.value = validateRecord(
-      form.title,
-      form.location,
-      form.description,
-      props.page === "visitors" ? form.contact : "",
-    );
-    if (props.page === "visitors" && !form.contact)
-      error.value = "请填写访客联系电话";
-    if (error.value) return;
-    createRecord(state, props.page === "repair" ? "tasks" : "visitors", {
-      title: form.title.trim(),
-      location: form.location.trim(),
-      description: form.description.trim(),
-      contact: form.contact,
-      date: form.date,
-      category: props.page === "repair" ? "用户报修" : "亲友来访",
-      status: props.page === "repair" ? "待处理" : "待到访",
-      owner: state.identity!,
-    });
-  }
+function submit() {
+  if (!auth() || submitting.value) return;
+  error.value = validateRecord(form.title, form.location, form.description, props.page === "visitors" ? form.contact : "");
+  if (props.page === "visitors" && !form.contact) error.value = "请填写访客联系电话";
+  if (error.value) return;
+  createRecord(state, props.page === "repair" ? "tasks" : "visitors", {
+    title: form.title.trim(), location: form.location.trim(), description: form.description.trim(),
+    contact: form.contact, date: form.date,
+    category: props.page === "repair" ? "用户报修" : "亲友来访",
+    status: props.page === "repair" ? "待处理" : "待到访", owner: state.identity!,
+  });
   form.title = "";
   form.description = "";
-  notify(props.page === "booking" ? "申请已提交，等待管理员审核" : "提交成功");
+  notify("提交成功");
   navigate("records");
 }
-async function cancelBooking(id: string) {
+async function cancelBooking(id: string, kind: "booking" | "leave" = "booking") {
   if (!state.identity || cancellingId.value) return;
   cancellingId.value = id;
   error.value = "";
   try {
-    const updated = await bookingClient.cancel(id, state.identity);
-    sharedBookings.value = sharedBookings.value.map((booking) =>
-      booking.id === id ? updated : booking,
-    );
-    notify("预约已取消");
+    if (kind === "booking") {
+      const updated = await bookingClient.cancel(id, state.identity);
+      sharedBookings.value = sharedBookings.value.map((item) => item.id === id ? updated : item);
+    } else {
+      const updated = await bookingClient.cancelLeave(id, state.identity);
+      sharedLeaves.value = sharedLeaves.value.map((item) => item.id === id ? updated : item);
+    }
+    notify("申请已取消");
   } catch (cause) {
     error.value = cause instanceof Error ? cause.message : "取消失败";
     await refreshBookings();
-  } finally {
-    cancellingId.value = "";
-  }
+  } finally { cancellingId.value = ""; }
 }
 const input = ref(""),
   busy = ref(false);
@@ -268,8 +233,8 @@ onBeforeUnmount(() => clearInterval(timer));
       <template v-if="page === 'home'"
         ><view class="mobile-hero"
           ><text class="overline">美好日常 · 从这里开始</text
-          ><text class="hero-title">{{ scenario.tagline }}</text
-          ><text class="hero-subtitle">{{ scenario.description }}</text
+          ><text class="hero-title">今天的学习，<br/>从容安排。</text
+          ><text class="hero-subtitle">教室预约与学生请假，随时查看申请进度。每一步，都有回应。</text
           ><view class="hero-art"
             ><view class="arch arch-one" /><view class="arch arch-two" /><view
               class="art-line"
@@ -279,45 +244,18 @@ onBeforeUnmount(() => clearInterval(timer));
           ><button
             role="button"
             class="hero-link"
-            @click="navigate('services')"
+            @click="navigate('booking')"
           >
-            探索{{ scenario.location }}服务 ↗
+            开始教室预约 ↗
           </button></view
         ><view class="section-title"
-          ><text>生活服务</text
-          ><text class="tiny muted">EVERYDAY SERVICES</text></view
-        ><view class="quick-grid"
-          ><button role="button" class="quick" @click="navigate('repair')">
-            <view class="quick-symbol"
-              ><Icon name="wrench" active :size="24" /></view
-            ><text>报修服务</text></button
-          ><button role="button" class="quick" @click="navigate('booking')">
-            <view class="quick-symbol"
-              ><Icon name="calendar-days" active :size="24" /></view
-            ><text>教室预约</text></button
-          ><button
-            role="button"
-            v-if="scenario.kind === 'community'"
-            class="quick"
-            @click="navigate('visitors')"
-          >
-            <view class="quick-symbol"
-              ><Icon name="user-plus" active :size="24" /></view
-            ><text>访客登记</text></button
-          ><button
-            role="button"
-            v-else
-            class="quick"
-            @click="navigate('services')"
-          >
-            <view class="quick-symbol"
-              ><Icon name="building-2" active :size="24" /></view
-            ><text>楼宇服务</text></button
-          ><button role="button" class="quick" @click="navigate('assistant')">
-            <view class="quick-symbol"
-              ><Icon name="sparkles" active :size="24" /></view
-            ><text>AI 助手</text>
-          </button></view
+          ><text>我的校园服务</text
+          ><text class="tiny muted">STUDENT SERVICES</text></view
+        ><view class="quick-grid campus-services"
+          ><button role="button" class="quick" @click="navigate('booking')"><view class="quick-symbol"><Icon name="calendar-days" active :size="24" /></view><text>教室预约</text><text class="quick-copy">选空间 · 看时段</text></button
+          ><button role="button" class="quick" @click="navigate('leave')"><view class="quick-symbol"><Icon name="calendar-days" active :size="24" /></view><text>学生请假</text><text class="quick-copy">填事由 · 等审批</text></button
+          ><button role="button" class="quick" @click="navigate('repair')"><view class="quick-symbol"><Icon name="wrench" active :size="24" /></view><text>报修服务</text><text class="quick-copy">设施问题反馈</text></button
+          ><button role="button" class="quick" @click="navigate('assistant')"><view class="quick-symbol"><Icon name="sparkles" active :size="24" /></view><text>服务助手</text><text class="quick-copy">校园常见问答</text></button></view
         ><view class="section-title"
           ><text>{{ scenario.location }}新鲜事</text
           ><button role="button" class="text-link" @click="navigate('notices')">
@@ -365,66 +303,17 @@ onBeforeUnmount(() => clearInterval(timer));
           ><text class="service-footer">查看详情 ↗</text></view
         ></template
       >
-      <template v-else-if="['repair', 'visitors', 'booking'].includes(page)"
+      <template v-else-if="['repair', 'visitors'].includes(page)"
         ><view class="page-intro"
-          ><text class="page-title">{{
-            page === "repair"
-              ? "把小事，交给我们。"
-              : page === "visitors"
-                ? "让相见，更从容。"
-                : "为热爱，留一个位置。"
-          }}</text
-          ><text class="body-copy">{{
-            page === "repair"
-              ? "填写问题与位置，我们会认真对待每一份反馈。"
-              : page === "visitors"
-                ? "提前登记来访信息，让亲友到访更加方便。"
-                : "选择教室与时段，提交申请后等待管理员审核。"
-          }}</text></view
+          ><text class="page-title">{{ page === "repair" ? "把小事，交给我们。" : "让相见，更从容。" }}</text
+          ><text class="body-copy">{{ page === "repair" ? "填写问题与位置，我们会认真对待每一份反馈。" : "提前登记来访信息，让亲友到访更加方便。" }}</text></view
         ><view
           v-if="!state.identity"
           class="signin-note"
           @click="navigate('login')"
           >登录后即可提交服务申请　→</view
         ><view class="mobile-form"
-          ><template v-if="page === 'booking'"
-            ><text class="field-label">预约教室</text
-            ><picker
-              :range="venues.map((r) => r.title)"
-              :value="form.venue"
-              @change="form.venue = Number($event.detail.value)"
-              ><view class="picker-field"
-                >{{ venues[form.venue]?.title ?? "暂无可预约教室" }}
-                <text>⌄</text></view
-              ></picker
-            ><text class="field-label">预约日期</text
-            ><picker
-              mode="date"
-                :value="form.date"
-              :start="todayInShanghai()"
-              @change="form.date  = fieldValue($event)"
-              ><view class="picker-field"
-                >{{ form.date }} <text>⌄</text></view
-              ></picker
-            ><text class="field-label">预约时段</text
-            ><picker
-              :range="bookingSlots"
-              @change="
-                form.time = bookingSlots[
-                  Number($event.detail.value)
-                ]
-              "
-              ><view class="picker-field"
-                >{{ form.time }} <text>⌄</text></view
-              ></picker
-            ><text class="field-label">使用人数</text
-            ><input
-              v-model="form.count"
-              class="mobile-input"
-              type="number"
-              aria-label="使用人数"  @blur="form.count  = fieldValue($event)"/></template
-          ><template v-else
-            ><text class="field-label">{{
+          ><text class="field-label">{{
               page === "repair" ? "问题名称" : "访客姓名"
             }}</text
             ><input
@@ -449,20 +338,18 @@ onBeforeUnmount(() => clearInterval(timer));
                 class="mobile-input"
                 type="tel"
                 :maxlength="11"
-                aria-label="联系电话"  @blur="form.contact  = fieldValue($event)"/></template></template
-          ><text class="field-label">{{
-            page === "booking" ? "使用说明" : "详细说明"
-          }}</text
+                aria-label="联系电话"  @blur="form.contact  = fieldValue($event)"/></template
+          ><text class="field-label">详细说明</text
           ><textarea
             v-model="form.description"
             class="mobile-textarea"
             aria-label="详细说明"
             placeholder="请补充说明，方便我们提供服务"
-            :maxlength="page === 'booking' ? 200 : 500"
+            :maxlength="500"
             :adjust-position="true"
            @blur="form.description  = fieldValue($event)"/><text v-if="error" class="form-error" role="alert">{{ error }}</text
           ><button role="button" class="primary-button" :disabled="submitting" @click="submit">
-            {{ submitting ? "提交中…" : page === "booking" ? "提交预约申请" : "提交申请" }}　↗
+            提交申请　↗
           </button></view
         ></template
       >
@@ -490,7 +377,7 @@ onBeforeUnmount(() => clearInterval(timer));
             state.identity ?? "欢迎来到" + scenario.name
           }}</text
           ><text class="body-copy">{{
-            state.identity ? "让服务伴随每一天。" : "登录后享受身边的便捷服务。"
+            state.identity ? "2024级软件工程1班 · 学生服务" : "登录后管理你的预约与请假申请。"
           }}</text
           ><button
             role="button"
@@ -506,6 +393,7 @@ onBeforeUnmount(() => clearInterval(timer));
             @click="state.identity ? navigate('records') : navigate('login')"
           >
             我的服务记录 <text>↗</text></button
+          ><button role="button" @click="navigate('leave')">学生请假 <text>↗</text></button
           ><button role="button" @click="navigate('notices')">
             公告消息 <text>↗</text></button
           ><button role="button" @click="navigate('assistant')">
@@ -513,10 +401,7 @@ onBeforeUnmount(() => clearInterval(timer));
           ><button
             role="button"
             v-if="state.identity"
-            @click="
-              state.identity = null;
-              notify('已退出登录');
-            "
+            @click="signOut"
           >
             退出登录 <text>↗</text>
           </button></view
@@ -525,8 +410,8 @@ onBeforeUnmount(() => clearInterval(timer));
       <template v-else-if="page === 'login'"
         ><view class="page-intro login-intro"
           ><text class="overline">WELCOME HOME</text
-          ><text class="page-title">欢迎回来。</text
-          ><text class="body-copy">在这里，连接属于你的日常。</text></view
+          ><text class="page-title">欢迎登录</text
+          ><text class="body-copy">登录后预约教室、提交请假并查看申请进度。</text></view
         ><view class="mobile-form"
           ><text class="field-label">账号</text
           ><input
@@ -542,15 +427,13 @@ onBeforeUnmount(() => clearInterval(timer));
            @blur="login.password  = fieldValue($event)"/><text v-if="error" class="form-error">{{ error }}</text
           ><button role="button" class="primary-button" @click="signIn">
             登录</button
-          ><text class="tiny muted centered"
-            >演示账号 user01 / 123456</text
           ></view
         ></template
       >
       <template v-else-if="page === 'records'"
         ><view class="page-intro"
           ><text class="page-title">服务，有迹可循。</text
-          ><text class="body-copy">查看申请状态；管理员审核后刷新即可看到结果。</text></view
+          ><text class="body-copy">查看教室预约与学生请假申请；教师审批后刷新即可看到结果。</text></view
         ><button role="button" class="secondary-button" :disabled="bookingsLoading" @click="refreshBookings">{{ bookingsLoading ? "正在刷新…" : "刷新预约状态" }}</button
         ><text v-if="error" class="form-error" role="alert">{{ error }}</text
         ><view v-if="!records.length && !bookingsLoading && !error" class="empty-state"
@@ -558,25 +441,24 @@ onBeforeUnmount(() => clearInterval(timer));
           ><button
             role="button"
             class="secondary-button"
-            @click="navigate('repair')"
+            @click="navigate('booking')"
           >
-            提交报修
+            预约教室
           </button></view
-        ><view v-for="item in records" :key="item.id" class="notice-card"
-          ><text class="status-pill" :class="{ warning: item.status === '待审核', rejected: item.status === '已拒绝' }">{{ item.status }}</text
-          ><text class="card-title">{{ item.title }}</text
-          ><text class="tiny muted">{{ item.location }} · {{ item.date }}</text
-          ><text class="body-copy">{{ item.description }}</text
-          ><text v-if="item.reviewReason" class="body-copy">审核说明：{{ item.reviewReason }}</text
-          ><button
-            role="button"
-            v-if="item.bookingId && ['待审核', '已预约'].includes(item.status)"
-            class="text-link cancel-booking"
-            :disabled="cancellingId === item.bookingId"
-            @click="cancelBooking(item.bookingId)"
-          >
-            {{ cancellingId === item.bookingId ? "取消中…" : "取消预约" }}
-          </button></view
+        ><view v-for="item in records" :key="item.id" class="notice-card service-record">
+          <text class="status-pill" :class="{ warning: item.status === '待审核', rejected: item.status === '已拒绝' }">{{ item.status }}</text>
+          <text class="record-title">{{ item.title }}</text>
+          <text class="record-meta">{{ item.timeRange || `${item.location} · ${item.date}` }}</text>
+          <text class="record-description">{{ item.description }}</text>
+          <view v-if="item.reviewer || item.reviewReason" class="record-review">
+            <text v-if="item.reviewer" class="record-reviewer">审核教师：{{ item.reviewer }}</text>
+            <text v-if="item.reviewReason" class="record-review-reason">审核说明：{{ item.reviewReason }}</text>
+          </view>
+          <view v-if="(item.bookingId && ['待审核', '已预约'].includes(item.status)) || (item.leaveId && ['待审核', '已通过'].includes(item.status))" class="record-actions">
+            <button role="button" v-if="item.bookingId" class="record-cancel" :disabled="cancellingId === item.bookingId" @click="cancelBooking(item.bookingId)">{{ cancellingId === item.bookingId ? '取消中…' : '取消预约' }}</button>
+            <button role="button" v-if="item.leaveId" class="record-cancel" :disabled="cancellingId === item.leaveId" @click="cancelBooking(item.leaveId, 'leave')">{{ cancellingId === item.leaveId ? '取消中…' : '取消请假' }}</button>
+          </view>
+        </view
         ></template
       >
       <template v-else-if="page === 'detail'"

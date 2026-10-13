@@ -1,10 +1,16 @@
+import type { LeaveDetails } from "./leave";
+export { leaveNatures, leaveDestinations, validateLeaveDetails, validLeaveTime, leaveTimes, leaveBounds, formatLeaveRange, formatLeaveDuration } from "./leave";
+export type { LeaveDetails } from "./leave";
 export type BookingStatus = "pending" | "approved" | "rejected" | "cancelled";
-
 export interface BookingRequest {
   id: string;
   facilityId: string;
   venue: string;
   owner: string;
+  classId?: string; // Legacy records did not include a class.
+  activity?: string;
+  phone?: string;
+  note?: string;
   date: string;
   time: string;
   count: number;
@@ -15,11 +21,33 @@ export interface BookingRequest {
   createdAt: string;
   updatedAt: string;
 }
+export type NewBooking = Pick<BookingRequest, "facilityId" | "owner" | "date" | "time" | "count" | "purpose"> & {
+  activity: string;
+  phone: string;
+  note?: string;
+};
 
-export type NewBooking = Pick<
-  BookingRequest,
-  "facilityId" | "owner" | "date" | "time" | "count" | "purpose"
->;
+export interface LeaveRequest extends Partial<LeaveDetails> {
+  id: string;
+  owner: string;
+  classId: string;
+  type: "病假" | "事假" | "其他";
+  startDate: string;
+  startTime?: string;
+  startPeriod?: "上午" | "下午";
+  endDate: string;
+  endTime?: string;
+  endPeriod?: "上午" | "下午";
+  reason: string;
+  phone: string;
+  status: BookingStatus;
+  reviewReason?: string;
+  reviewer?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+export type NewLeave = Pick<LeaveRequest, "owner" | "type" | "startDate" | "endDate" | "reason" | "phone"> & LeaveDetails & { startTime: string; endTime: string };
+export interface SlotAvailability { time: string; available: boolean; pending: number; reason?: string }
 
 export const bookingStatusLabel: Record<BookingStatus, string> = {
   pending: "待审核",
@@ -27,21 +55,17 @@ export const bookingStatusLabel: Record<BookingStatus, string> = {
   rejected: "已拒绝",
   cancelled: "已取消",
 };
-
+export const leaveStatusLabel: Record<BookingStatus, string> = {
+  ...bookingStatusLabel,
+  approved: "已通过",
+};
 export const bookingSlots = ["09:00–10:00", "14:00–15:00", "18:00–19:00"] as const;
-
 export function todayInShanghai() {
-  return new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Shanghai" }).format(
-    new Date(),
-  );
+  return new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Shanghai" }).format(new Date());
 }
-
 export class BookingApiError extends Error {
-  constructor(message: string, public readonly status = 0) {
-    super(message);
-  }
+  constructor(message: string, public readonly status = 0) { super(message); }
 }
-
 export function createBookingClient(baseUrl = "http://localhost:5606") {
   async function request<T>(path: string, method = "GET", body?: unknown): Promise<T> {
     let response: Response;
@@ -56,35 +80,38 @@ export function createBookingClient(baseUrl = "http://localhost:5606") {
       throw new BookingApiError("预约审核服务暂不可连接，请稍后重试");
     }
     const payload = await response.json().catch(() => null);
-    if (!response.ok)
-      throw new BookingApiError(
-        typeof payload?.error === "string" ? payload.error : "预约操作失败，请重试",
-        response.status,
-      );
+    if (!response.ok) throw new BookingApiError(typeof payload?.error === "string" ? payload.error : "操作失败，请重试", response.status);
     return payload.data as T;
   }
   return {
-    list(owner?: string) {
-      return request<BookingRequest[]>(
-        `/api/bookings${owner ? `?owner=${encodeURIComponent(owner)}` : ""}`,
-      );
+    list(owner?: string, teacher?: string) {
+      const params = new URLSearchParams();
+      if (owner) params.set("owner", owner);
+      if (teacher) params.set("teacher", teacher);
+      return request<BookingRequest[]>(`/api/bookings${params.size ? `?${params}` : ""}`);
     },
-    create(input: NewBooking) {
-      return request<BookingRequest>("/api/bookings", "POST", input);
+    availability(facilityId: string, date: string) {
+      return request<SlotAvailability[]>(`/api/bookings/availability?facilityId=${encodeURIComponent(facilityId)}&date=${encodeURIComponent(date)}`);
     },
+    create(input: NewBooking) { return request<BookingRequest>("/api/bookings", "POST", input); },
     review(id: string, decision: "approve" | "reject", reviewer: string, reason = "") {
-      return request<BookingRequest>(
-        `/api/bookings/${encodeURIComponent(id)}`,
-        "PATCH",
-        { action: decision, reviewer, reason },
-      );
+      return request<BookingRequest>(`/api/bookings/${encodeURIComponent(id)}`, "PATCH", { action: decision, reviewer, reason });
     },
     cancel(id: string, owner: string) {
-      return request<BookingRequest>(
-        `/api/bookings/${encodeURIComponent(id)}`,
-        "PATCH",
-        { action: "cancel", owner },
-      );
+      return request<BookingRequest>(`/api/bookings/${encodeURIComponent(id)}`, "PATCH", { action: "cancel", owner });
+    },
+    listLeaves(owner?: string, teacher?: string) {
+      const params = new URLSearchParams();
+      if (owner) params.set("owner", owner);
+      if (teacher) params.set("teacher", teacher);
+      return request<LeaveRequest[]>(`/api/leaves${params.size ? `?${params}` : ""}`);
+    },
+    createLeave(input: NewLeave) { return request<LeaveRequest>("/api/leaves", "POST", input); },
+    reviewLeave(id: string, decision: "approve" | "reject", reviewer: string, reason = "") {
+      return request<LeaveRequest>(`/api/leaves/${encodeURIComponent(id)}`, "PATCH", { action: decision, reviewer, reason });
+    },
+    cancelLeave(id: string, owner: string) {
+      return request<LeaveRequest>(`/api/leaves/${encodeURIComponent(id)}`, "PATCH", { action: "cancel", owner });
     },
   };
 }

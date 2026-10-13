@@ -1,0 +1,62 @@
+/* uni-app H5 uses uni-* hosts. Keep layout rules on classes, not native tag names. */
+.mobile-root { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; background-image: none; font-size: 15px; line-height: 1.5; }
+.mobile-root uni-input, .mobile-root uni-textarea { font-family: inherit; }
+.mobile-header { min-height: 68px; padding: 12px 20px; background: var(--surface); }
+.mobile-header > uni-view { min-width: 0; }
+.mobile-header > uni-view:first-of-type { margin-left: 0; }
+.mobile-header .weather { margin-left: auto; }
+.mobile-brand { font-family: inherit; font-size: 19px; font-weight: 650; letter-spacing: .02em; }
+.mobile-eyebrow { margin-top: 3px; font-size: 10px; letter-spacing: .1em; }
+.mobile-content { width: 100%; max-width: 640px; padding-top: 1px; }
+.mobile-root .page-title { font-family: inherit; font-size: 26px; font-weight: 600; line-height: 1.4; margin-bottom: 8px; letter-spacing: -.02em; }
+.page-intro { margin: 24px 0; }
+.body-copy { line-height: 1.7; }
+.section-title > uni-text:first-child { font-family: inherit; font-size: 19px; font-weight: 600; color: var(--ink); }
+.section-title { align-items: center; gap: 10px; }
+.mobile-root .login-intro { text-align: center; margin: 42px 0 26px; }
+.login-intro .overline { font-size: 11px; }
+.login-intro .page-title { font-size: 28px; margin-top: 8px; }
+.mobile-form { padding: 20px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); gap: 8px; }
+.mobile-form .field-label { margin-top: 9px; color: var(--ink); font-size: 14px; font-weight: 500; }
+.mobile-form .field-label:first-child { margin-top: 0; }
+.mobile-input, .mobile-textarea { background: var(--canvas); width: 100%; max-width: 100%; }
+.mobile-root uni-button.primary-button { display: flex; align-items: center; justify-content: center; min-height: 48px; margin: 16px 0 0; font-weight: 600; }
+.mobile-root .profile-card { display: flex; align-items: center; flex-direction: column; padding: 30px 20px; margin: 24px 0; border: 1px solid var(--line); border-radius: 20px; background: var(--surface); }
+.profile-card .avatar { display: grid; place-items: center; width: 64px; height: 64px; line-height: 1; margin: 0 0 16px; font-family: inherit; font-size: 25px; }
+.profile-card .page-title { font-size: 23px; }
+.mobile-root .profile-card uni-button.primary-button { width: 100%; max-width: 260px; margin: 20px auto 0; align-self: center; }
+.menu-list { border: 1px solid var(--line); border-radius: 16px; background: var(--surface); padding: 0 18px; overflow: hidden; }
+.mobile-root .menu-list uni-button[role="button"] { min-height: 58px; padding: 16px 0; font-size: 15px; }
+.mobile-root .menu-list uni-button[role="button"]:last-child { border-bottom: 0; }
+.menu-list uni-button > uni-text { color: var(--brand); flex: none; }
+.mobile-root .bottom-nav { border-radius: 0; background: var(--surface); padding-top: 7px; box-shadow: 0 -4px 18px #24385806; }
+.mobile-root .bottom-nav uni-button[role="button"] { padding: 4px 0; gap: 4px; min-height: 52px; }
+.mobile-root .booking-page .page-intro { margin-top: 24px; }
+.booking-page .application-progress { margin-bottom: 20px; }
+.application-progress > uni-text { color: var(--muted); font-size: 12px; }
+.application-progress > uni-text.current { color: var(--brand); font-weight: 600; }
+.venue-option .card-title { font-family: inherit; font-size: 18px; font-weight: 600; }
+.venue-tags > uni-text { padding: 5px 8px; border-radius: 7px; background: color-mix(in srgb, var(--brand), transparent 92%); font-size: 11px; color: var(--brand); }
+.venue-option-head .overline { flex: 1; min-width: 0; font-size: 11px; }
+.choice-indicator { flex: none; }
+.date-option uni-text { color: var(--muted); font-size: 11px; }
+.date-option.chosen uni-text { color: #fff; }
+.slot-option uni-text { color: var(--muted); font-size: 11px; }
+.slot-option.chosen uni-text { color: #fff; }
+.review-lines > uni-view { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 14px 18px; border-bottom: 1px solid var(--line); line-height: 1.55; }
+.review-lines > uni-view:last-child { border-bottom: 0; }
+.review-lines > uni-view > uni-text { flex: 0 0 76px; color: var(--muted); font-size: 13px; }
+.review-lines strong { min-width: 0; flex: 1; font-weight: 500; }
+.notice-card .card-title { font-family: inherit; font-size: 19px; font-weight: 600; }
+.mobile-root uni-button[disabled] { opacity: .5; }
+.service-record { padding: 20px; }
+.service-record .status-pill { width: fit-content; }
+.record-title { display: block; margin: 12px 0 8px; color: var(--ink); font-size: 18px; font-weight: 600; line-height: 1.4; }
+.record-meta { display: block; color: var(--muted); font-size: 13px; line-height: 1.65; overflow-wrap: anywhere; }
+.record-description { display: block; margin-top: 10px; color: var(--ink); font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; }
+.record-review { display: flex; flex-direction: column; gap: 5px; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
+.record-reviewer { display: block; color: var(--muted); font-size: 13px; line-height: 1.6; }
+.record-review-reason { display: block; color: var(--ink); font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
+.record-actions { display: flex; justify-content: flex-end; margin-top: 12px; }
+.mobile-root uni-button.record-cancel { display: flex; align-items: center; justify-content: center; min-height: 40px; padding: 8px 16px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--brand); font-size: 13px; font-weight: 500; line-height: 1.4; }
+@media (max-width: 360px) { .mobile-header { padding-inline: 16px; } .mobile-form { padding: 16px; } .profile-card .page-title { font-size: 21px; } }

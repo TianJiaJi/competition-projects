@@ -1,0 +1,91 @@
+/* Teacher UI is loaded after the shared shell so utility controls never inherit browser defaults. */
+.teacher-workspace { padding: 20px 0 28px; font-size: 14px; }
+.teacher-workspace button { appearance: none; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; font: inherit; color: inherit; line-height: 1.5; text-align: left; }
+.teacher-workspace h1, .teacher-workspace h2 { font-family: inherit; letter-spacing: 0; }
+.teacher-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0 0 24px; }
+.teacher-heading h1 { margin: 5px 0 8px; font-size: clamp(26px, 3vw, 34px); font-weight: 650; line-height: 1.3; }
+.teacher-heading .muted { margin: 0; font-size: 13px; }
+.teacher-heading .liquid-glass-button { flex: none; min-height: 42px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface); font-size: 13px; }
+.teacher-hero { padding: 25px 28px; border-radius: 20px; background: linear-gradient(110deg, #344b81, #566ca2); color: white; }
+.teacher-hero .eyebrow { color: #e4eaff; }
+.teacher-hero h2 { font-size: 29px; font-weight: 600; line-height: 1.35; margin: 8px 0 12px; }
+.teacher-hero p:last-child { font-size: 13px; margin: 0; opacity: .92; }
+.teacher-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 16px 0 24px; }
+.teacher-metrics button { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 16px 20px; border: 1px solid var(--line); border-radius: 15px; background: var(--surface); }
+.teacher-metrics strong { color: var(--brand); font-size: 27px; font-weight: 500; line-height: 1.2; }
+.teacher-metrics span { font-size: 12px; }
+.teacher-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.teacher-panel { min-width: 0; padding: 20px; }
+.teacher-panel-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
+.teacher-panel-head h2 { margin: 0; font-size: 18px; font-weight: 600; }
+.teacher-panel-head button { min-height: 36px; color: var(--brand); font-size: 12px; }
+.teacher-list-row { display: grid; grid-template-columns: 95px minmax(0, 1fr) 14px; align-items: center; gap: 10px; width: 100%; min-height: 76px; padding: 14px 0 !important; border-top: 1px solid var(--line) !important; }
+.teacher-list-row strong, .teacher-list-row small { display: block; overflow-wrap: anywhere; }
+.teacher-list-row strong { font-size: 15px; font-weight: 600; }
+.teacher-list-row small { margin-top: 5px; color: var(--muted); font-size: 11px; }
+.teacher-time { font-size: 12px; color: var(--brand); font-weight: 600; }
+.teacher-lead { margin: 0 0 20px; color: var(--muted); font-size: 13px; line-height: 1.7; }
+.teacher-subnav { display: flex; gap: 4px; margin: 0 0 18px; padding: 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.teacher-subnav button { flex: 1; min-height: 42px; padding: 9px 12px; border-radius: 9px; color: var(--muted); font-size: 13px; font-weight: 600; text-align: center; }
+.teacher-subnav button.active { background: var(--brand); color: white; }
+.teacher-subnav small { margin-left: 4px; font-weight: 400; }
+.teacher-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; margin-bottom: 18px; }
+.teacher-week button { padding: 11px 4px; min-height: 42px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); font-size: 12px; text-align: center; }
+.teacher-week button.active { background: var(--brand); color: white; border-color: var(--brand); }
+.teacher-course { display: grid; grid-template-columns: 115px minmax(0, 1fr) auto; align-items: center; gap: 15px; width: 100%; padding: 20px !important; margin: 10px 0 !important; border: 1px solid var(--line) !important; border-radius: 15px !important; background: var(--surface) !important; }
+.teacher-course strong, .teacher-course small { display: block; }
+.teacher-course small { margin-top: 8px; color: var(--muted); }
+.teacher-empty { padding: 30px 20px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 14px; line-height: 1.7; }
+.teacher-class { padding: 26px; }
+.teacher-class h2 { margin: 12px 0; font-size: 24px; }
+.teacher-class p { color: var(--muted); }
+.teacher-class-stats { display: flex; flex-wrap: wrap; gap: 22px; margin: 22px 0; padding: 18px 0; border-block: 1px solid var(--line); }
+.teacher-class-stats span { font-size: 12px; color: var(--muted); }
+.teacher-class-stats strong { color: var(--brand); font-size: 22px; }
+.teacher-class .liquid-glass-button { padding: 10px 16px; min-height: 44px; border-radius: 10px; background: var(--brand); color: #fff; }
+.teacher-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.teacher-card { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; min-width: 0; padding: 20px !important; border: 1px solid var(--line) !important; border-radius: 15px !important; background: var(--surface) !important; }
+.teacher-card strong { font-size: 18px; overflow-wrap: anywhere; }
+.teacher-card > small, .teacher-card > span:not(.teacher-card-top):not(.teacher-avatar):not(.teacher-link) { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.teacher-card-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; }
+.teacher-card-top small { color: var(--muted); }
+.teacher-avatar { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: color-mix(in srgb, var(--brand), transparent 90%); color: var(--brand); font-size: 18px; }
+.teacher-link { margin-top: auto; color: var(--brand); font-size: 13px; font-weight: 600; }
+.teacher-filters { display: flex; gap: 12px; margin-bottom: 18px; }
+.teacher-filters label, .teacher-filter { display: flex; flex-direction: column; gap: 7px; font-size: 12px; color: var(--muted); }
+.teacher-filters input, .teacher-filters select, .teacher-filter input { min-height: 44px; min-width: 0; width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); font-size: 15px; }
+.teacher-filters label:first-child { flex: 1; }
+.teacher-filter { max-width: 440px; margin-bottom: 18px; }
+.teacher-review { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); }
+.teacher-review label { display: flex; flex-direction: column; gap: 8px; color: var(--muted); font-size: 14px; }
+.teacher-review textarea { width: 100%; min-height: 85px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); font: inherit; }
+.teacher-review-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px; }
+.teacher-workspace button:focus-visible, .teacher-review textarea:focus-visible, .teacher-filters input:focus-visible, .teacher-filters select:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.staff-detail .detail-meta { grid-template-columns: 110px minmax(0, 1fr); }
+.staff-detail .detail-meta dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
+.staff .page-nav { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (min-width: 701px) { .staff .page-nav { position: static; max-width: 100%; border: 1px solid var(--line); border-radius: 14px; margin: 20px 0 0; padding: 5px; box-shadow: none; } .staff main { padding-bottom: 32px; } }
+@media (max-width: 700px) {
+  .staff .page-nav { max-width: 100%; border-radius: 0; padding: 6px 12px calc(6px + env(safe-area-inset-bottom)); }
+  .staff .page-nav button { font-size: 13px; min-height: 48px; }
+  .teacher-workspace { padding-top: 10px; }
+  .teacher-heading { gap: 10px; margin-bottom: 18px; }
+  .teacher-heading h1 { font-size: 24px; }
+  .teacher-heading .muted { font-size: 11px; }
+  .teacher-heading .liquid-glass-button { font-size: 12px; padding: 8px 10px; }
+  .teacher-hero { padding: 20px; }
+  .teacher-hero h2 { font-size: 25px; }
+  .teacher-hero p:last-child { font-size: 12px; }
+  .teacher-metrics { gap: 8px; margin: 12px 0 18px; }
+  .teacher-metrics button { padding: 12px 10px; }
+  .teacher-metrics strong { font-size: 25px; }
+  .teacher-metrics span { font-size: 11px; }
+  .teacher-columns, .teacher-grid { grid-template-columns: 1fr; }
+  .teacher-panel { padding: 16px; }
+  .teacher-week { gap: 4px; }
+  .teacher-week button { font-size: 11px; padding: 10px 0; }
+  .teacher-course { grid-template-columns: 1fr auto; gap: 8px; }
+  .teacher-course .teacher-time { grid-column: 1 / -1; }
+  .teacher-class { padding: 20px; }
+  .teacher-filters { flex-direction: column; }
+}

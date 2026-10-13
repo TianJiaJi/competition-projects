@@ -865,3 +865,55 @@ uni-button::after {
     font-size: 30px;
   }
 }
+/* Campus applications: explicit in-page choices instead of platform pickers. */
+.application-progress { display: flex; justify-content: space-between; gap: 8px; margin: 0 0 26px; padding: 12px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); }
+.application-progress text { color: var(--muted); font-size: 12px; }
+.application-progress text.current { color: var(--brand); font-weight: 700; }
+.booking-page .section-title, .leave-page .section-title { margin: 28px 0 14px; }
+.mobile-root uni-button.venue-option { display: block; width: 100%; min-height: 150px; margin: 12px 0; padding: 20px; border: 1px solid var(--line); border-radius: 19px; background: var(--surface); text-align: left; box-shadow: 0 7px 25px #24385809; }
+.mobile-root uni-button.venue-option.chosen { border: 2px solid var(--brand); padding: 19px; background: color-mix(in srgb, var(--surface), var(--brand) 5%); }
+.venue-option-head { display: flex; justify-content: space-between; align-items: start; gap: 8px; }
+.choice-indicator { color: var(--brand); font-size: 12px; white-space: nowrap; }
+.venue-option .card-title { display: block; margin: 12px 0 4px; font-size: 21px; }
+.venue-option .body-copy { display: block; margin: 0 0 12px; font-size: 13px; line-height: 1.6; }
+.venue-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.venue-tags text { padding: 5px 8px; border-radius: 7px; background: color-mix(in srgb, var(--brand), transparent 91%); color: var(--brand); font-size: 11px; }
+.venue-rule { display: block; margin-top: 12px; padding-top: 11px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+.date-scroll { width: 100%; white-space: nowrap; }
+.date-strip { display: flex; gap: 9px; width: max-content; padding: 2px 2px 8px; }
+.mobile-root uni-button.date-option { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-width: 72px; min-height: 70px; padding: 10px; border: 1px solid var(--line); border-radius: 13px; background: var(--surface); }
+.date-option text { font-size: 11px; color: var(--muted); }
+.date-option strong { font-size: 14px; font-weight: 600; }
+.mobile-root uni-button.date-option.chosen, .mobile-root uni-button.choice-chip.chosen, .mobile-root uni-button.slot-option.chosen { border-color: var(--brand); background: var(--brand); color: white; }
+.date-option.chosen text, .slot-option.chosen text { color: #eef2ff; }
+.slot-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.mobile-root uni-button.slot-option { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 8px; width: 100%; min-height: 83px; padding: 12px; border: 1px solid var(--line); border-radius: 13px; background: var(--surface); text-align: left; }
+.slot-option strong { font-size: 14px; }
+.slot-option text { color: var(--muted); font-size: 11px; white-space: normal; }
+.mobile-root uni-button.slot-option.unavailable { opacity: .55; background: var(--canvas); }
+.booking-hint { display: block; margin: 15px 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.booking-summary { display: flex; flex-direction: column; gap: 9px; padding: 21px; background: color-mix(in srgb, var(--brand), transparent 92%); border: 1px solid var(--line); border-radius: 17px; }
+.booking-summary strong { font-size: 22px; line-height: 1.35; }
+.booking-summary > text:last-of-type { font-size: 13px; color: var(--muted); }
+.booking-summary uni-button { align-self: flex-start; color: var(--brand); font-size: 13px; }
+.review-lines { margin: 18px 0; border: 1px solid var(--line); border-radius: 15px; background: var(--surface); overflow: hidden; }
+.review-lines view { display: flex; justify-content: space-between; gap: 16px; padding: 14px 18px; border-bottom: 1px solid var(--line); line-height: 1.55; }
+.review-lines view:last-child { border: 0; }
+.review-lines text { flex: none; color: var(--muted); font-size: 13px; }
+.review-lines strong { font-size: 13px; text-align: right; overflow-wrap: anywhere; }
+.choice-row { display: flex; gap: 9px; margin: 14px 0; }
+.mobile-root uni-button.choice-chip { flex: 1; min-height: 46px; padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); font-size: 14px; }
+.booking-page .signin-note, .leave-page .signin-note { margin: 16px 0; }
+.booking-page .signin-note uni-button, .leave-page .signin-note uni-button { color: var(--brand); font-weight: 700; }
+.mobile-root uni-button[disabled] { cursor: not-allowed; }
+@media (max-width: 360px) { .slot-grid { grid-template-columns: 1fr; } .mobile-root uni-button.venue-option { padding: 16px; } .venue-option .card-title { font-size: 19px; } }
+/* Student home: two clear primary paths, with support services alongside. */
+.mobile-hero { min-height: 255px; padding: 25px 22px; margin-bottom: 22px; }
+.mobile-hero .hero-title { font-size: clamp(29px, 8vw, 38px); line-height: 1.3; margin: 11px 0; }
+.mobile-hero .hero-subtitle { width: 76%; font-size: 13px; line-height: 1.65; }
+.mobile-root .campus-services { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
+.mobile-root uni-button.campus-services { display: grid; }
+.mobile-root .campus-services uni-button.quick { display: flex; align-items: flex-start; justify-content: center; gap: 5px; min-height: 115px; padding: 14px; border: 1px solid var(--line); border-radius: 17px; background: var(--surface); text-align: left; font-size: 15px; font-weight: 600; }
+.mobile-root .campus-services .quick-symbol { display: grid; place-items: center; width: 38px; height: 38px; border: 0; background: color-mix(in srgb, var(--brand), transparent 91%); border-radius: 10px; }
+.mobile-root .campus-services .quick-copy { color: var(--muted); font-size: 11px; font-weight: 400; }
+.mobile-root .campus-services uni-button.quick:nth-child(-n+2) { border-color: color-mix(in srgb, var(--brand), transparent 48%); }

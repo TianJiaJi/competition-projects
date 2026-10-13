@@ -1,7 +1,10 @@
 import { spawn } from "node:child_process";
 const names = ["public", "ops", "staff", "admin", "mobile"];
 const children = names.map((n) =>
-  spawn("pnpm", ["--filter", "@scene/" + n, "dev"], { stdio: "inherit" }),
+  spawn("pnpm", ["--filter", "@scene/" + n, "dev"], {
+    stdio: "inherit",
+    shell: process.platform === "win32",
+  }),
 );
 children.push(spawn(process.execPath, ["scripts/booking-service.mjs"], { stdio: "inherit" }));
 for (const signal of ["SIGINT", "SIGTERM"])

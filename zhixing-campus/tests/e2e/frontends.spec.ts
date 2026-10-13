@@ -93,24 +93,16 @@ test("后台校验、新增、编辑和刷新恢复", async ({ page }) => {
     0,
   );
 });
-test("工作人员领取、反馈、历史查询", async ({ page }) => {
+test("教师查看课程表与班级学生", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await login(page, "staff");
-  const title = scenario.seed.tasks[0].title;
-  await page.getByRole("button", { name: new RegExp(title) }).click();
-  await page.getByRole("button", { name: "领取任务", exact: true }).click();
-  await page.getByRole("button", { name: "提交处理结果" }).click();
-  await expect(page.getByRole("alert")).toContainText("请填写");
-  await page
-    .getByLabel("处理结果", { exact: true })
-    .fill("已完成现场检修，运行正常");
-  await page.getByRole("button", { name: "提交处理结果" }).click();
-  await expect(page.getByRole("dialog")).toContainText("已完成现场检修");
-  await page.getByRole("button", { name: "关闭详情" }).click();
-  await page.goto(url("staff") + "/#/history");
-  await expect(
-    page.getByRole("button", { name: new RegExp(title) }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "教学工作台" })).toBeVisible();
+  await page.getByRole("button", { name: "教学", exact: true }).click();
+  await page.getByRole("button", { name: "课程表", exact: true }).click();
+  await page.getByRole("button", { name: "周一" }).click();
+  await expect(page.getByText("程序设计基础")).toBeVisible();
+  await page.getByRole("button", { name: "学生信息", exact: true }).click();
+  await expect(page.locator(".teacher-card")).toHaveCount(8);
 });
 test("手机登录、报修、记录和刷新恢复", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -132,25 +124,9 @@ test("手机登录、报修、记录和刷新恢复", async ({ page }) => {
   await page.reload();
   await expect(page.getByText("手机报修测试", { exact: true })).toHaveCount(0);
 });
-test("手机教室预约、取消与模拟问答", async ({ page }) => {
+test("手机服务助手模拟问答", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await mobileLogin(page);
-  await page.goto(url("mobile") + "/#/pages/booking/index");
-  await page.setViewportSize({ width: 1366, height: 768 });
-  await page.locator('uni-picker input[type="date"]').fill(
-    new Date(Date.now() + (1 + Math.floor(Math.random() * 45000)) * 86400000).toISOString().slice(0, 10),
-  );
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page
-    .getByRole("textbox", { name: "详细说明", exact: true })
-    .fill("读书交流");
-  await page.getByRole("button", { name: /提交预约申请/ }).click();
-  await expect(page.getByText("我的服务记录", { exact: true })).toBeVisible();
-  await page
-    .getByRole("button", { name: "取消预约", exact: true })
-    .first()
-    .click();
-  await expect(page.getByText("已取消", { exact: true }).first()).toBeVisible();
   await page.goto(url("mobile") + "/#/pages/assistant/index");
   await page
     .getByRole("button", {

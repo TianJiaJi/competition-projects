@@ -4,59 +4,79 @@ import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { scenario } from "../scenario/config.ts";
+import { validateLeaveDetails, validLeaveTime, leaveBounds } from "../packages/bookings/src/leave.ts";
+import { bookingWindowDays, demoClass, demoTeacher, leaveTypes, leaveWindowDays, studentFor } from "../scenario/teaching.ts";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const defaultDataFile = join(root, ".local", "booking-requests.json");
-const slots = new Set(["09:00–10:00", "14:00–15:00", "18:00–19:00"]);
-const today = () =>
-  new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Shanghai" }).format(
-    new Date(),
-  );
+const slots = ["09:00–10:00", "14:00–15:00", "18:00–19:00"];
+const today = () => new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Shanghai" }).format(new Date());
+const nowTime = () => new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Shanghai", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date());
+const fail = (status, message) => { throw { status, message }; };
+const cleanText = (value, max) => typeof value === "string" && value.trim().length <= max ? value.trim() : "";
+const classOf = (item) => item.classId || studentFor(item.owner)?.classId;
+const sortNewest = (items) => items.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
-function load(dataFile) {
+function load(file) {
   try {
-    const data = JSON.parse(readFileSync(dataFile, "utf8"));
-    if (!Array.isArray(data)) throw new Error("预约数据文件格式错误");
+    const data = JSON.parse(readFileSync(file, "utf8"));
+    if (!Array.isArray(data)) throw new Error("申请数据文件格式错误");
     return data;
   } catch (error) {
     if (error.code === "ENOENT") return [];
     throw error;
   }
 }
-
-function save(dataFile, records) {
-  mkdirSync(dirname(dataFile), { recursive: true });
-  const temporary = `${dataFile}.${process.pid}.tmp`;
+function save(file, records) {
+  mkdirSync(dirname(file), { recursive: true });
+  const temporary = `${file}.${process.pid}.tmp`;
   writeFileSync(temporary, JSON.stringify(records, null, 2) + "\n");
-  renameSync(temporary, dataFile);
+  renameSync(temporary, file);
 }
-
 function send(res, status, data) {
   res.writeHead(status, { "Content-Type": "application/json; charset=utf-8" });
   res.end(JSON.stringify(status < 400 ? { data } : { error: data }));
 }
-
 async function bodyOf(req) {
   let body = "";
   for await (const chunk of req) {
     body += chunk;
-    if (body.length > 16384) throw { status: 413, message: "请求内容过长" };
+    if (body.length > 16384) fail(413, "请求内容过长");
   }
   try {
     const value = JSON.parse(body);
     if (value && typeof value === "object" && !Array.isArray(value)) return value;
   } catch {}
-  throw { status: 400, message: "请求内容格式错误" };
+  fail(400, "请求内容格式错误");
+}
+function validDate(date, days) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(date) &&
+    !Number.isNaN(Date.parse(`${date}T00:00:00Z`)) &&
+    new Date(`${date}T00:00:00Z`).toISOString().slice(0, 10) === date &&
+    date >= today() && (Date.parse(`${date}T00:00:00Z`) - Date.parse(`${today()}T00:00:00Z`)) / 86400000 < days;
+}
+function bookableVenue(facilityId) {
+  return scenario.seed.facilities.find((item) => item.id === facilityId && item.capacity && item.status === "正常" && ["研讨空间", "教学空间"].includes(item.category));
+}
+function slotReason(records, venue, date, time) {
+  if (date === today() && time.slice(0, 5) <= nowTime()) return "时段已开始";
+  if (records.some((item) => item.status === "approved" && item.facilityId === venue.id && item.date === date && item.time === time) ||
+      scenario.seed.bookings.some((item) => item.status === "已预约" && item.location === venue.title && item.date === date && item.description.includes(time)))
+    return "已被预约";
+  return "";
+}
+function verifyStudent(owner) {
+  const student = studentFor(owner);
+  if (!student) fail(403, "演示学生身份不存在");
+  return student;
+}
+function verifyTeacher(reviewer, record) {
+  if (reviewer !== demoTeacher.name || classOf(record) !== demoClass.id) fail(403, "只能审核所带班级的学生申请");
 }
 
-function cleanText(value, max) {
-  return typeof value === "string" && value.trim().length <= max
-    ? value.trim()
-    : "";
-}
-
-export function createBookingServer({ dataFile = defaultDataFile } = {}) {
+export function createBookingServer({ dataFile = defaultDataFile, leaveFile = join(dirname(dataFile), "leave-requests.json") } = {}) {
   let records = load(dataFile);
+  let leaves = load(leaveFile);
   return createServer(async (req, res) => {
     const origin = req.headers.origin;
     if (origin && /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin)) {
@@ -68,125 +88,126 @@ export function createBookingServer({ dataFile = defaultDataFile } = {}) {
     if (req.method === "OPTIONS") return send(res, 200, null);
     const url = new URL(req.url || "/", "http://localhost");
     try {
-      if (req.method === "GET" && url.pathname === "/health")
-        return send(res, 200, { ok: true });
+      if (req.method === "GET" && url.pathname === "/health") return send(res, 200, { ok: true });
+      if (req.method === "GET" && url.pathname === "/api/bookings/availability") {
+        const venue = bookableVenue(url.searchParams.get("facilityId"));
+        const date = url.searchParams.get("date") || "";
+        if (!venue || !validDate(date, bookingWindowDays)) fail(400, "请选择开放日期与教室");
+        return send(res, 200, slots.map((time) => {
+          const reason = slotReason(records, venue, date, time);
+          return { time, available: !reason, reason: reason || undefined,
+            pending: records.filter((item) => item.status === "pending" && item.facilityId === venue.id && item.date === date && item.time === time).length };
+        }));
+      }
       if (req.method === "GET" && url.pathname === "/api/bookings") {
         const owner = url.searchParams.get("owner");
-        return send(
-          res,
-          200,
-          records
-            .filter((item) => !owner || item.owner === owner)
-            .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
-        );
+        const teacher = url.searchParams.get("teacher");
+        if (teacher && teacher !== demoTeacher.name) fail(403, "教师身份不存在");
+        return send(res, 200, sortNewest(records.filter((item) => (!owner || item.owner === owner) && (!teacher || classOf(item) === demoClass.id)).map((item) => ({ ...item, classId: classOf(item) }))));
       }
       if (req.method === "POST" && url.pathname === "/api/bookings") {
         const input = await bodyOf(req);
-        const venue = scenario.seed.facilities.find(
-          (item) => item.id === input.facilityId && item.capacity && item.status === "正常" && ["研讨空间", "教学空间"].includes(item.category),
-        );
+        const venue = bookableVenue(input.facilityId);
+        if (!venue) fail(400, "请选择可预约的教室");
         const owner = cleanText(input.owner, 30);
-        const purpose = cleanText(input.purpose, 200);
+        const student = verifyStudent(owner);
         const date = cleanText(input.date, 10);
         const time = cleanText(input.time, 30);
+        const activity = cleanText(input.activity, 50);
+        const purpose = cleanText(input.purpose, 200);
+        const phone = cleanText(input.phone, 20);
+        const note = cleanText(input.note ?? "", 200);
         const count = input.count;
-        if (!venue) throw { status: 400, message: "请选择可预约的教室" };
-        if (!owner) throw { status: 400, message: "请先登录学生端" };
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(date) ||
-            !Number.isFinite(Date.parse(`${date}T00:00:00Z`)) ||
-            new Date(`${date}T00:00:00Z`).toISOString().slice(0, 10) !== date ||
-            date < today())
-          throw { status: 400, message: "请选择今天或之后的有效日期" };
-        if (!slots.has(time)) throw { status: 400, message: "请选择有效的预约时段" };
-        if (!Number.isInteger(count) || count < 1 || count > venue.capacity)
-          throw { status: 400, message: `使用人数应为 1–${venue.capacity}` };
-        if (purpose.length < 2)
-          throw { status: 400, message: "请填写至少两个字的使用说明" };
-        if (
-          records.some(
-            (item) =>
-              item.owner === owner &&
-              item.facilityId === venue.id &&
-              item.date === date &&
-              item.time === time &&
-              ["pending", "approved"].includes(item.status),
-          )
-        )
-          throw { status: 409, message: "你已申请过该教室与时段" };
+        if (!validDate(date, bookingWindowDays)) fail(400, "请选择未来 14 天内的有效日期");
+        if (!slots.includes(time)) fail(400, "请选择有效的预约时段");
+        if (!Number.isInteger(count) || count < 1 || count > venue.capacity) fail(400, `使用人数应为 1–${venue.capacity}`);
+        if (activity.length < 2) fail(400, "活动名称需 2–50 字");
+        if (purpose.length < 2) fail(400, "使用用途需 2–200 字");
+        if (!/^1\d{10}$/.test(phone)) fail(400, "请填写 11 位联系人手机号");
+        if (records.some((item) => item.owner === owner && item.facilityId === venue.id && item.date === date && item.time === time && ["pending", "approved"].includes(item.status))) fail(409, "你已申请过该教室与时段");
+        const reason = slotReason(records, venue, date, time);
+        if (reason) fail(409, `${reason}，请重新选择时段`);
         const now = new Date().toISOString();
-        const booking = {
-          id: `BR-${randomUUID()}`,
-          facilityId: venue.id,
-          venue: venue.title,
-          owner,
-          date,
-          time,
-          count,
-          purpose,
-          status: "pending",
-          createdAt: now,
-          updatedAt: now,
-        };
-        const next = [booking, ...records];
-        save(dataFile, next);
-        records = next;
+        const booking = { id: `BR-${randomUUID()}`, facilityId: venue.id, venue: venue.title, owner, classId: student.classId,
+          activity, date, time, count, purpose, phone, note, status: "pending", createdAt: now, updatedAt: now };
+        const next = [booking, ...records]; save(dataFile, next); records = next;
         return send(res, 201, booking);
       }
-      const match = /^\/api\/bookings\/(BR-[0-9a-f-]+)$/.exec(url.pathname);
-      if (req.method === "PATCH" && match) {
+      if (req.method === "GET" && url.pathname === "/api/leaves") {
+        const owner = url.searchParams.get("owner");
+        const teacher = url.searchParams.get("teacher");
+        if (teacher && teacher !== demoTeacher.name) fail(403, "教师身份不存在");
+        return send(res, 200, sortNewest(leaves.filter((item) => (!owner || item.owner === owner) && (!teacher || classOf(item) === demoClass.id))));
+      }
+      if (req.method === "POST" && url.pathname === "/api/leaves") {
         const input = await bodyOf(req);
-        const booking = records.find((item) => item.id === match[1]);
-        if (!booking) throw { status: 404, message: "预约申请不存在" };
+        const owner = cleanText(input.owner, 30);
+        const student = verifyStudent(owner);
+        const type = cleanText(input.type, 10);
+        const startDate = cleanText(input.startDate, 10);
+        const endDate = cleanText(input.endDate, 10);
+        const startTime = cleanText(input.startTime, 8);
+        const endTime = cleanText(input.endTime, 8);
+        const reason = cleanText(input.reason, 1000);
+        const phone = cleanText(input.phone, 20);
+        const detailError = validateLeaveDetails(input);
+        if (detailError) fail(400, detailError);
+        if (!leaveTypes.includes(type)) fail(400, "请选择请假类型");
+        if (!validDate(startDate, leaveWindowDays) || !validDate(endDate, leaveWindowDays) || !validLeaveTime(startTime) || !validLeaveTime(endTime)) fail(400, "请填写有效的起止日期和时分秒");
+        const interval = leaveBounds({ startDate, endDate, startTime, endTime });
+        if (interval.end <= interval.start) fail(400, "结束时间必须晚于开始时间");
+        if (interval.start < Date.now()) fail(400, "开始时间不能早于当前时间");
+        if (reason.length < 5) fail(400, "请填写 5–1000 字的请假事由");
+        if (!/^1\d{10}$/.test(phone)) fail(400, "请填写 11 位本人手机号");
+        if (leaves.some((item) => {
+          if (item.owner !== owner || !["pending", "approved"].includes(item.status)) return false;
+          const existing = leaveBounds(item);
+          return interval.start < existing.end && interval.end > existing.start;
+        })) fail(409, "该时段已有有效请假申请");
+        const now = new Date().toISOString();
+        const leave = { id: `LV-${randomUUID()}`, owner, classId: student.classId, type, startDate, startTime,
+          endDate, endTime, reason, phone,
+          leavingCampus: input.leavingCampus, leavingCity: input.leavingCity,
+          destination: input.leavingCampus ? input.destination : "",
+          address: input.leavingCampus ? input.address.trim() : "",
+          emergencyName: input.emergencyName.trim(), emergencyPhone: input.emergencyPhone.trim(),
+          nature: input.nature, cc: [...input.cc], confirmed: true,
+          status: "pending", createdAt: now, updatedAt: now };
+        const next = [leave, ...leaves]; save(leaveFile, next); leaves = next;
+        return send(res, 201, leave);
+      }
+      const bookingMatch = /^\/api\/bookings\/(BR-[0-9a-f-]+)$/.exec(url.pathname);
+      const leaveMatch = /^\/api\/leaves\/(LV-[0-9a-f-]+)$/.exec(url.pathname);
+      if (req.method === "PATCH" && (bookingMatch || leaveMatch)) {
+        const input = await bodyOf(req);
+        const isLeave = !!leaveMatch;
+        const source = isLeave ? leaves : records;
+        const record = source.find((item) => item.id === (bookingMatch || leaveMatch)[1]);
+        if (!record) fail(404, "申请不存在");
         const action = input.action;
         let updated;
         if (action === "cancel") {
-          if (input.owner !== booking.owner)
-            throw { status: 403, message: "只能取消自己的预约" };
-          if (!["pending", "approved"].includes(booking.status))
-            throw { status: 409, message: "该预约已无法取消" };
-          updated = { ...booking, status: "cancelled", updatedAt: new Date().toISOString() };
+          if (input.owner !== record.owner) fail(403, "只能取消自己的申请");
+          if (!["pending", "approved"].includes(record.status)) fail(409, "该申请已无法取消");
+          updated = { ...record, status: "cancelled", updatedAt: new Date().toISOString() };
         } else if (action === "approve" || action === "reject") {
-          if (booking.status !== "pending")
-            throw { status: 409, message: "该申请已处理，请刷新列表" };
-          const reviewer = cleanText(input.reviewer, 30);
+          verifyTeacher(input.reviewer, record);
+          if (record.status !== "pending") fail(409, "该申请已处理，请刷新列表");
           const reason = cleanText(input.reason, 200);
-          if (!reviewer) throw { status: 400, message: "请先登录管理员端" };
-          if (action === "reject" && !reason)
-            throw { status: 400, message: "拒绝时请填写原因" };
-          if (action === "approve") {
-            const conflict = records.some(
-              (item) =>
-                item.id !== booking.id &&
-                item.status === "approved" &&
-                item.facilityId === booking.facilityId &&
-                item.date === booking.date &&
-                item.time === booking.time,
-            ) || scenario.seed.bookings.some(
-              (item) =>
-                item.status === "已预约" &&
-                item.location === booking.venue &&
-                item.date === booking.date &&
-                item.description.includes(booking.time),
-            );
-            if (conflict)
-              throw { status: 409, message: "该教室时段已有通过的预约，请拒绝并说明原因" };
-          }
-          updated = {
-            ...booking,
-            status: action === "approve" ? "approved" : "rejected",
-            reviewReason: reason || undefined,
-            reviewer,
-            updatedAt: new Date().toISOString(),
-          };
-        } else throw { status: 400, message: "不支持的预约操作" };
-        const next = records.map((item) => item.id === booking.id ? updated : item);
-        save(dataFile, next);
-        records = next;
+          if (action === "reject" && !reason) fail(400, "拒绝时请填写原因");
+          if (action === "approve" && !isLeave && slotReason(records, bookableVenue(record.facilityId), record.date, record.time))
+            fail(409, "该教室时段已有通过的预约，请拒绝并说明原因");
+          updated = { ...record, status: action === "approve" ? "approved" : "rejected", reviewReason: reason || undefined,
+            reviewer: demoTeacher.name, updatedAt: new Date().toISOString() };
+        } else fail(400, "不支持的申请操作");
+        const next = source.map((item) => item.id === record.id ? updated : item);
+        save(isLeave ? leaveFile : dataFile, next);
+        if (isLeave) leaves = next; else records = next;
         return send(res, 200, updated);
       }
       send(res, 404, "接口不存在");
     } catch (error) {
-      send(res, error.status || 500, error.message || "预约服务异常");
+      send(res, error.status || 500, error.message || "申请服务异常");
     }
   });
 }

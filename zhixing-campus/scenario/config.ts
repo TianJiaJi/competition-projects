@@ -162,7 +162,7 @@ const seed: Record<Collection, RecordItem[]> = {
       "今日例行检查状态正常。",
     ),
     record(
-      "F7",
+      "F9",
       "校园公共照明",
       "教学东区",
       "照明设备",
@@ -327,7 +327,7 @@ export const scenario: Scenario = {
   description:
     "连接学习、探索与生活。从一间研讨室到一座校园，让每一次求知，都有安心的陪伴。",
   person: "师生",
-  worker: "后勤",
+  worker: "教师",
   location: "校园",
   ports: {
     public: 5500,
