@@ -1,12 +1,13 @@
 import type { Endpoint, SystemConfig } from './types';
 import { expandApiCases } from './api-case-library';
+import { platformApiMaterials } from './platform-api-materials';
 export const HANDOFF_ID = 'CAMPUS-DELIVERY-2026-001';
 export const TASK_ID = 'QA-CAMPUS-001';
 export const MESSAGE_ID = 'MSG-CAMPUS-001';
 export const campusProject = {
   id: 'zhixing-campus', name: '智慧校园', brand: '知行校园', version: '1.0.0',
   solution: '智慧校园一体化解决方案', frontend: '周宁 · 前端工程师', backend: '陈工 · 后端工程师',
-  summary: '基于校园解决方案交付五端项目，本轮重点验收教室预约、秒级请假与教师班级审批。',
+  summary: '验收智慧校园五端整个平台，覆盖校园空间、人员权限、教学预约与请假、设施运维、后勤工单、安全巡检、消息公告及运行概览。',
   pages: [
     { id: 'mobile', name: '学生服务端', port: 5502, path: '/#/pages/home/index', device: 'phone', checks: ['导航与服务入口清晰', '预约表单及教室时段正确', '请假日历与时分秒滚轮可操作', '服务记录显示审核反馈'] },
     { id: 'staff', name: '教师工作台', port: 5503, path: '/', device: 'desktop', checks: ['登录后刷新保持身份', '教学分类与班级范围正确', '预约及请假审批可操作', '拒绝原因与学生记录一致'] },
@@ -16,7 +17,7 @@ export const campusProject = {
   ],
 } as const;
 export function projectUrl(page: typeof campusProject.pages[number], hostname = 'localhost') { return `http://${hostname}:${page.port}${page.path}`; }
-export interface ApiMaterial { sourceMaterialId?: string; id: string; name: string; method: 'GET' | 'POST' | 'PATCH'; path: string; group: string; role: string; purpose: string; request: Record<string, unknown>; status: number; response: unknown; checkpoint: string }
+export interface ApiMaterial { source?: 'platform-contract'; sourceContractId?: string; sourceMaterialId?: string; id: string; name: string; method: 'GET' | 'POST' | 'PATCH'; path: string; group: string; role: string; purpose: string; request: Record<string, unknown>; status: number; response: unknown; checkpoint: string }
 const booking = { id: 'BR-aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', owner: '林悦', classId: 'CLS-2401', status: 'pending', venue: '明理楼 305 教室', activity: '课程研讨', date: '交付后第二天', time: '18:00–19:00' };
 const leave = { id: 'LV-bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', owner: '林悦', classId: 'CLS-2401', type: '事假', startTime: '08:10:15', endTime: '10:30:20', status: 'pending' };
 export const apiMaterials: ApiMaterial[] = [
@@ -32,7 +33,9 @@ export const apiMaterials: ApiMaterial[] = [
   { id: 'leave-review', name: '教师审批请假', method: 'PATCH', path: `/api/leaves/${leave.id}`, group: '教师审批', role: '陈越 / 本班教师', purpose: '审核班级内学生请假', request: { action: 'approve', reviewer: '陈越' }, status: 200, response: { data: { ...leave, status: 'approved', reviewer: '陈越' } }, checkpoint: '班级范围与最终审批状态正确' },
   { id: 'leave-cancel', name: '学生取消请假', method: 'PATCH', path: `/api/leaves/${leave.id}`, group: '学生请假', role: '申请人', purpose: '取消本人待审或已通过的请假', request: { action: 'cancel', owner: '林悦' }, status: 200, response: { data: { ...leave, status: 'cancelled' } }, checkpoint: '取消后保留原记录及状态' },
   { id: 'teacher-list', name: '教师班级待办', method: 'GET', path: '/api/leaves', group: '教师审批', role: '陈越 / 本班教师', purpose: '教师按班级读取请假队列', request: { teacher: '陈越' }, status: 200, response: { data: [leave] }, checkpoint: '队列中的班级为 CLS-2401' },
+  ...platformApiMaterials,
 ];
+export const apiBusinessGroups=[...new Set(apiMaterials.map(item=>item.group))];
 export const apiTestMaterials=expandApiCases(apiMaterials);
 export const API_CASE_COUNT=apiTestMaterials.length;
 function shapeMatches(actual: unknown, expected: unknown): boolean {

@@ -1,13 +1,16 @@
 import { expect, test } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
 import { fixtures, receive, nav, generateApi, noOverflow } from './helpers';
 test.beforeEach(async ({page})=>fixtures(page));
 for (const width of [1280,1440,1920]) {
-  test(`原绿色主题及压测布局 ${width}px：左侧配置、双曲线、未启动无测试数据`,async({page})=>{
+  test(`原绿色主题及并发测试布局 ${width}px：左侧配置、双曲线、未启动无测试数据`,async({page})=>{
     await page.setViewportSize({width,height:1100});
     await receive(page);
     await generateApi(page);
-    await nav(page,'压力测试');
-    await expect(page.getByRole('heading',{name:'观察系统，如何承受压力。',exact:true})).toBeVisible();
+    await nav(page,'并发测试');
+    await expect(page.getByRole('heading',{name:'并发测试，观察多请求下的系统表现。',exact:true})).toBeVisible();
+    await expect(page.getByRole('navigation').getByRole('button',{name:/^并发测试/})).toBeVisible();
+    await expect(page.getByRole('navigation').getByRole('button',{name:/^压力测试/})).toHaveCount(0);
     await expect(page.locator('.pressure-workspace .metrics article')).toHaveCount(4);
     await expect(page.locator('.pressure-config')).toBeVisible();
     await expect(page.locator('.pressure-stage .stage-stair > span')).toHaveCount(5);
@@ -25,20 +28,20 @@ for (const width of [1280,1440,1920]) {
   });
 }
 test('加压停止及栏目切换保留本轮曲线，刷新后同样保留',async({page})=>{
-  await receive(page); await generateApi(page); await nav(page,'压力测试');
+  await receive(page); await generateApi(page); await nav(page,'并发测试');
   await page.getByLabel('目标并发',{exact:true}).fill('20');
   await page.getByLabel('持续时长',{exact:true}).fill('10');
-  await page.getByRole('button',{name:'开始压力测试',exact:true}).click();
+  await page.getByRole('button',{name:'开始并发测试',exact:true}).click();
   await expect(page.getByRole('button',{name:'加压一级',exact:true})).toBeEnabled();
   await page.getByRole('button',{name:'加压一级',exact:true}).click();
   await expect(page.locator('.event-strip')).toContainText('手动');
-  await page.getByRole('button',{name:'停止压测',exact:true}).click();
+  await page.getByRole('button',{name:'停止并发测试',exact:true}).click();
   await expect(page.locator('.load-report-entry')).toBeVisible();
   await expect(page.locator('.pressure-stage .stage-time')).toContainText('/ 10 s');
   await expect(page.locator('.trend-chart .chart-cursor')).toHaveCount(2);
-  await nav(page,'交付概览'); await nav(page,'压力测试');
-  await expect(page.getByLabel('目标并发',{exact:true})).toHaveValue('20');
-  await expect(page.getByLabel('持续时长',{exact:true})).toHaveValue('10');
+  await nav(page,'交付概览'); await nav(page,'并发测试');
+  await expect(page.getByLabel('目标并发',{exact:true})).toHaveValue('2000');
+  await expect(page.getByLabel('持续时长',{exact:true})).toHaveValue('30');
   await expect(page.locator('.pressure-stage .stage-time')).toContainText('/ 10 s');
   await expect(page.locator('.event-strip')).toContainText('手动');
   await expect(page.locator('.trend-chart .chart-cursor')).toHaveCount(2);
@@ -46,9 +49,18 @@ test('加压停止及栏目切换保留本轮曲线，刷新后同样保留',asy
   await page.screenshot({path:'.local/qa/testing-pressure-restored-stopped.png',fullPage:true});
   await page.reload();
   await expect(page.locator('.delivery-task-card')).toHaveCount(1);
-  await nav(page,'压力测试');
-  await expect(page.getByLabel('目标并发',{exact:true})).toHaveValue('20');
-  await expect(page.getByLabel('持续时长',{exact:true})).toHaveValue('10');
+  await nav(page,'并发测试');
+  await expect(page.getByLabel('目标并发',{exact:true})).toHaveValue('2000');
+  await expect(page.getByLabel('持续时长',{exact:true})).toHaveValue('30');
   await expect(page.locator('.trend-chart .chart-cursor')).toHaveCount(2);
   await expect(page.locator('.event-strip')).toContainText('手动');
+  await page.getByRole('button',{name:'查看并发测试报告',exact:true}).click();
+  await expect(page.getByRole('dialog',{name:'并发测试报告',exact:true})).toBeVisible();
+  const pending=page.waitForEvent('download');await page.getByRole('button',{name:'下载 HTML 报告',exact:true}).click();
+  const file=await pending,html=await readFile((await file.path())!,'utf8');
+  expect(html).toContain('<h1>本次并发目标验收</h1>');expect(html).not.toContain('压力测试');
+  await page.keyboard.press('Escape');await nav(page,'验收报告');
+  await page.getByRole('button',{name:'汇总验收报告',exact:true}).click();
+  await expect(page.locator('.acceptance-stat-grid')).toContainText('并发测试');
+  await expect(page.locator('.archived-reports')).toContainText('并发测试');
 });

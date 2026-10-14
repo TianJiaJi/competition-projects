@@ -1,141 +1,56 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { ArrowDownToLine, Check, FileText, Gauge } from "lucide-vue-next";
-import ModalFrame from "./ModalFrame.vue";
-import TrendChart from "./TrendChart.vue";
-import { loadReportSummary, type MeasurementReport } from "./engine";
-
-const props = defineProps<{ report: MeasurementReport }>();
-const emit = defineEmits<{ close: []; json: []; html: [] }>();
-const summary = computed(() => loadReportSummary(props.report));
-const stats = computed(() => summary.value.statistics);
-const reachedStages = computed(() => summary.value.stages.filter(stage => stage.reached));
-const format = (value: number, digits = 1) => value.toLocaleString("zh-CN", { maximumFractionDigits: digits });
-const started = computed(() => new Date(props.report.startedAt).toLocaleString("zh-CN", { hour12: false, timeZone: "Asia/Shanghai" }));
+import { computed } from 'vue';
+import { ArrowDownToLine, CheckCircle2, AlertCircle, FileText, Gauge, ArrowRight } from 'lucide-vue-next';
+import ModalFrame from './ModalFrame.vue';
+import TrendChart from './TrendChart.vue';
+import { loadReportSummary, type MeasurementReport } from './engine';
+const props=defineProps<{report:MeasurementReport}>();
+const emit=defineEmits<{close:[];json:[];html:[];feedback:[]}>();
+const summary=computed(()=>loadReportSummary(props.report));
+const goal=computed(()=>summary.value.goal);
+const stats=computed(()=>summary.value.statistics);
+const stages=computed(()=>summary.value.stages.filter(stage=>stage.reached));
+const format=(value:number,digits=1)=>value.toLocaleString('zh-CN',{maximumFractionDigits:digits});
+const started=computed(()=>new Date(props.report.startedAt).toLocaleString('zh-CN',{hour12:false,timeZone:'Asia/Shanghai'}));
 </script>
-
 <template>
-  <ModalFrame title="压力测试报告" wide @close="emit('close')">
+  <ModalFrame title="并发测试报告" wide @close="emit('close')">
     <div class="load-report-body">
-      <div class="report-cover">
-        <div class="report-cover-icon"><Gauge :size="28" /></div>
-        <div>
-          <div class="report-eyebrow">PERFORMANCE TEST REPORT</div>
-          <h3>{{ report.status === 'completed' ? '本轮压力测试已完成' : '本轮阶段记录已保存' }}</h3>
-          <p>{{ report.system.name }} · {{ summary.endpointName }}</p>
-        </div>
-        <span class="completion-tag">
-          <Check :size="14" />{{ report.status === 'completed' ? '成果已归档' : '阶段记录' }}
-        </span>
-      </div>
-      <div class="report-metadata">
-        <span>编号 <b>{{ report.id.slice(0, 8).toUpperCase() }}</b></span>
-        <span>开始 {{ started }}</span>
-        <span>执行 {{ format(report.elapsedMs / 1000) }} / {{ report.config?.duration }} 秒</span>
-        <code>{{ summary.endpointMethod }} {{ report.system.baseUrl }}{{ summary.endpointPath }}</code>
-      </div>
-
-      <section aria-label="负载统计">
-        <div class="report-section-title"><h4>负载统计</h4><span>本轮数据汇总</span></div>
-        <div class="report-kpis">
-          <article><span>峰值并发</span><strong>{{ format(summary.peakConcurrency, 0) }}</strong><small>目标 {{ format(report.config?.concurrency || 0, 0) }}<template v-if="summary.reachedTarget"> · 已达目标</template></small></article>
-          <article><span>累计完成请求</span><strong>{{ format(stats.count, 0) }}</strong><small>覆盖 {{ format(report.elapsedMs / 1000) }} 秒执行过程</small></article>
-          <article><span>峰值吞吐</span><strong>{{ format(summary.peakRps) }}<em>req/s</em></strong><small>取本轮统计窗口峰值</small></article>
-          <article><span>全程 P95</span><strong>{{ stats.count ? format(stats.p95) : '—' }}<em>ms</em></strong><small>P50 {{ format(stats.p50) }} · P99 {{ format(stats.p99) }} ms</small></article>
-        </div>
-        <div class="report-throughput">
-          <span>平均吞吐 <b>{{ format(stats.rps) }}</b> req/s</span>
-          <span>平均延迟 <b>{{ format(stats.average) }}</b> ms</span>
-          <span>最长延迟 <b>{{ format(stats.max) }}</b> ms</span>
-        </div>
-
+      <header class="report-cover"><Gauge :size="28"/><div><small>CONCURRENCY GOAL / TEST REPORT</small><h3>本次并发目标验收</h3><p>{{report.system.name}} · {{summary.endpointName}} · 本地模型演示{{report.loadModel?'（含峰值随机波动）':''}}</p></div><span>{{goal.executionComplete?'完整测试已结束':'本轮未完整结束'}}</span></header>
+      <section class="goal-verdict" :class="goal.verdict" aria-label="并发目标结论">
+        <component :is="goal.verdict==='passed'?CheckCircle2:AlertCircle" :size="30"/>
+        <div><h3>{{goal.verdictLabel}}</h3><p>{{goal.reason}}</p><small v-if="!goal.executionComplete">{{report.status==='stopped'?'本轮已提前停止':'尚未完成设定时长'}}；目标判定与测试完整性分开记录，仍需补齐测试时长才可完结任务。</small></div>
       </section>
-
-      <div class="report-chart-grid">
-        <section><h4>负载与吞吐过程</h4><p class="report-chart-legend">绿色：展示并发 · 黄色：展示吞吐</p><TrendChart kind="load" :frames="report.frames" :events="report.events" :duration="report.config?.duration" :concurrency="report.config?.concurrency" :rps="Math.max(report.config?.rps || 0, summary.peakRps, 1)" label="报告负载与吞吐趋势" /></section>
-        <section><h4>响应延迟过程</h4><p class="report-chart-legend">深绿：窗口 P50 · 浅绿：窗口 P95</p><TrendChart :frames="report.frames" :duration="report.config?.duration" label="报告响应延迟趋势" /></section>
-      </div>
-
-      <section>
-        <div class="report-section-title"><h4>已记录的加压阶段</h4><span>自动 {{ report.events.filter(event => event.type === 'automatic').length }} 次 / 手动 {{ report.events.filter(event => event.type === 'manual').length }} 次加压</span></div>
-        <div class="report-table-wrap"><table class="report-stage-table">
-          <thead><tr><th>阶段</th><th>并发</th><th>峰值 req/s</th><th>最高窗口 P95</th><th>执行情况</th></tr></thead>
-          <tbody><tr v-for="stage in reachedStages" :key="stage.level">
-            <td>{{ stage.label }}</td><td>{{ format(stage.concurrency, 0) }}</td>
-            <td>{{ format(stage.peakRps) }}</td><td>{{ stage.maxWindowP95 ? `${format(stage.maxWindowP95)} ms` : '—' }}</td>
-            <td>已记录</td>
-          </tr></tbody>
-        </table></div>
+      <section class="goal-kpis" aria-label="目标达成对比">
+        <article><span>本次目标并发</span><strong>{{goal.targetConcurrency===null?'—':format(goal.targetConcurrency,0)}}</strong><small>来自本次报告保存的负载配置</small></article>
+        <article><span>{{report.loadModel?'模型演示峰值并发':'已记录峰值并发'}}</span><strong>{{format(goal.peakConcurrency,0)}}</strong><small>仅计有效采样，不把计划升档当成达标</small></article>
+        <article><span>目标达成率</span><strong>{{goal.achievementPercent===null?'—':format(goal.achievementPercent)}}<em v-if="goal.achievementPercent!==null">%</em></strong><small>峰值并发 ÷ 目标并发</small></article>
+        <article><span>距离目标差额</span><strong>{{goal.gap===null?'—':format(goal.gap,0)}}</strong><small>{{goal.reachedTarget?'目标已达到，无并发缺口':'尚缺的并发数量'}}</small></article>
       </section>
-
-      <section class="report-outcomes" aria-label="本轮测试成果">
-        <h4>本轮测试成果</h4>
-        <ul>
-          <li><Check :size="16" /><span><b>负载过程已记录</b>覆盖 {{ reachedStages.length }} 个阶段，峰值并发 {{ format(summary.peakConcurrency, 0) }}。</span></li>
-          <li><Check :size="16" /><span><b>性能指标已汇总</b>累计 {{ format(stats.count, 0) }} 次完成请求，吞吐与延迟趋势已生成。</span></li>
-          <li><Check :size="16" /><span><b>报告材料已整理</b>本轮配置、阶段数据和趋势图可随报告一起导出。</span></li>
-        </ul>
+      <div class="goal-progress" role="progressbar" aria-label="并发目标达成率" :aria-valuenow="Math.min(100,goal.achievementPercent || 0)" aria-valuemin="0" aria-valuemax="100"><i :class="goal.verdict" :style="{width:`${Math.min(100,goal.achievementPercent || 0)}%`}"/></div>
+      <p class="judgement-rule">判定标准：有效采样峰值 ≥ 目标并发即为目标通过；没有有效采样时标记为待补测，不判为通过。吞吐和延迟用于辅助观察，不替代本次并发目标判定。<template v-if="report.loadModel"> 峰值阶段含{{report.loadModel.minOvershootPercent}}%–{{report.loadModel.maxOvershootPercent}}%正向随机演示波动，非实测数据。</template></p>
+      <div class="report-metadata"><span>编号 {{report.id.slice(0,8).toUpperCase()}}</span><span>开始 {{started}}</span><span>执行 {{format(report.elapsedMs/1000)}} / {{report.config?.duration || '—'}} 秒</span><span>首次达标 {{goal.firstReachedSecond===null?'未达到':`${format(goal.firstReachedSecond)} s`}}</span><span>达标采样覆盖 {{goal.evidenceMode==='legacy-throughput-frames'?'旧记录未统计':`${format(goal.targetWindowSeconds)} 秒`}}</span><code>{{summary.endpointMethod}} {{report.system.baseUrl}}{{summary.endpointPath}}</code></div>
+      <section class="goal-issues" :class="{failed:goal.issues.length}" aria-label="并发目标问题与反馈">
+        <h4>{{goal.issues.length?'未达标问题 · 已记录':'目标问题记录'}}</h4>
+        <ul v-if="goal.issues.length"><li v-for="issue in goal.issues" :key="issue">{{issue}}</li></ul>
+        <p v-else>{{goal.verdict==='passed'?'本次并发目标无缺口。':'证据不足，需保持原目标重新测试，不形成虚假的通过结论。'}}</p>
+        <p v-if="stats.failed">另有 {{format(stats.failed,0)}} 次请求契约未通过，独立纳入验收问题，不隐藏在目标通过结论中。</p>
+        <p v-if="goal.issues.length">该问题随本轮原始报告保存，汇总验收报告后纳入问题清单，再由操作者手动提交反馈。本地反馈不代表交付团队实际收到。</p>
+        <button v-if="goal.issues.length" class="text-button" @click="emit('close');emit('feedback')">前往汇总与反馈<ArrowRight :size="14"/></button>
       </section>
+      <section class="supporting-metrics" aria-label="辅助性能指标"><h4>辅助指标（不替代并发目标结论）</h4><div><span>累计完成请求 <b>{{format(stats.count,0)}}</b></span><span>请求契约未通过 <b>{{format(stats.failed,0)}}</b></span><span>峰值吞吐 <b>{{format(summary.peakRps)}}</b> req/s</span><span>全程 P95 <b>{{stats.count?format(stats.p95):'—'}}</b> ms</span></div></section>
+      <div class="report-chart-grid"><section><h4>并发目标与负载过程</h4><p>绿色：记录并发 · 黄色：吞吐 · 虚线目标 {{goal.targetConcurrency || '—'}}</p><TrendChart kind="load" show-target :frames="report.frames" :events="report.events" :duration="report.config?.duration" :concurrency="report.config?.concurrency" :rps="Math.max(report.config?.rps || 0,summary.peakRps,1)" label="报告负载与吞吐趋势"/></section><section><h4>响应延迟过程</h4><p>辅助观察模型延迟变化</p><TrendChart :frames="report.frames" :duration="report.config?.duration" label="报告响应延迟趋势"/></section></div>
+      <section class="report-stages"><h4>加压过程记录</h4><div class="report-table-wrap"><table><thead><tr><th>阶段</th><th>计划 / 记录并发</th><th>峰值 req/s</th><th>最高窗口 P95</th></tr></thead><tbody><tr v-for="stage in stages" :key="stage.level"><td>{{stage.label}}</td><td>{{format(stage.concurrency,0)}}</td><td>{{format(stage.peakRps)}}</td><td>{{stage.maxWindowP95?`${format(stage.maxWindowP95)} ms`:'—'}}</td></tr></tbody></table></div><p>阶段表包含计划升档记录；目标结论只依据有效采样窗口。{{goal.evidenceMode==='legacy-throughput-frames'?'旧报告缺少窗口元数据，使用有吞吐记录的帧核验。':''}}</p></section>
+      <p class="report-source">{{goal.measurement}}</p>
     </div>
-    <div class="dialog-footer load-report-actions">
-      <span>本地模型证据 · 原始记录可导出 JSON</span>
-      <button class="secondary" @click="emit('json')"><ArrowDownToLine :size="15" />导出原始 JSON</button>
-      <button class="primary" @click="emit('html')"><FileText :size="15" />下载 HTML 报告</button>
-    </div>
+    <div class="dialog-footer load-report-actions"><span>目标结论、差额与问题随报告一并导出</span><button class="secondary" @click="emit('json')"><ArrowDownToLine :size="15"/>导出原始 JSON</button><button class="primary" @click="emit('html')"><FileText :size="15"/>下载 HTML 报告</button></div>
   </ModalFrame>
 </template>
-
 <style scoped>
-.load-report-body { overflow: auto; min-height: 0; padding: 24px 28px 28px; }
-.report-cover { display: flex; align-items: center; gap: 16px; padding-bottom: 22px; }
-.report-cover-icon { display: grid; place-items: center; width: 58px; height: 58px; border-radius: 16px; background: #eaf3e3; color: #5d8050; flex-shrink: 0; }
-.report-eyebrow { font-size: 9px; letter-spacing: 1.8px; color: #84957c; margin-bottom: 8px; }
-.report-cover h3 { font-size: 23px; font-weight: 500; color: #2d5540; margin-bottom: 8px; }
-.report-cover p { color: #7c8d74; font-size: 12px; }
-.completion-tag { margin-left: auto; display: flex; align-items: center; gap: 5px; white-space: nowrap; padding: 7px 11px; background: #edf5e5; color: #60834c; border-radius: 20px; font-size: 11px; }
-.report-metadata { display: flex; gap: 10px 24px; flex-wrap: wrap; padding: 15px 0; border-block: 1px solid #e5ecdf; font-size: 11px; color: #7e8d76; }
-.report-metadata b { font-family: var(--mono); color: #52654b; font-weight: 500; }
-.report-metadata code { width: 100%; overflow-wrap: anywhere; font-size: 11px; }
-.report-section-title { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 24px 0 14px; }
-h4 { margin: 0; font-size: 14px; font-weight: 600; color: #3b6246; }
-.report-section-title > span { font-size: 11px; color: #8a9b7e; }
-.report-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
-.report-kpis article { background: #f5f8f1; border: 1px solid #e7edde; border-radius: 10px; padding: 16px; }
-.report-kpis article > span { font-size: 11px; color: #7d9073; }
-.report-kpis strong { display: block; color: #31583f; font: 29px var(--mono); margin: 13px 0 10px; }
-.report-kpis em { font: 11px var(--mono); margin-left: 5px; color: #86987b; }
-.report-kpis small { display: block; font-size: 10px; color: #8d9b83; line-height: 1.6; }
-.report-throughput { display: flex; flex-wrap: wrap; gap: 12px 24px; margin-top: 16px; font-size: 11px; color: #839379; }
-.report-throughput b { color: #526c49; font-family: var(--mono); }
-.report-chart-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 24px; }
-.report-chart-grid section { border: 1px solid #e5ecdf; border-radius: 10px; padding: 16px 0 6px; min-width: 0; }
-.report-chart-grid h4, .report-chart-legend { margin-inline: 17px; }
-.report-chart-legend { margin-block: 9px 3px; font-size: 10px; color: #839379; }
-.report-table-wrap { overflow: auto; }
-.report-stage-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 12px; white-space: nowrap; }
-.report-stage-table th { background: #f4f7f0; font-weight: 500; color: #7e9272; }
-.report-stage-table th, .report-stage-table td { padding: 11px 14px; border-bottom: 1px solid #e8eee1; }
-.report-stage-table td { color: #566e4c; font-variant-numeric: tabular-nums; }
-.report-outcomes { margin-top: 24px; padding: 20px; border: 1px solid #dce8d3; background: #f4f8ef; border-radius: 10px; }
-.report-outcomes ul { display: grid; gap: 15px; margin: 18px 0 0; padding: 0; list-style: none; }
-.report-outcomes li { display: flex; align-items: flex-start; gap: 10px; color: #7d9073; font-size: 12px; line-height: 1.8; }
-.report-outcomes svg { flex-shrink: 0; margin-top: 3px; color: #5d8050; }
-.report-outcomes b { display: block; color: #3b6246; font-weight: 500; }
-.load-report-actions { flex-shrink: 0; gap: 10px; }
-.load-report-actions > span { margin-right: auto; }
-@media (max-width: 700px) {
-  .load-report-body { padding: 18px 16px; }
-  .report-cover { flex-wrap: wrap; gap: 12px; }
-  .report-cover h3 { font-size: 18px; }
-  .report-cover-icon { width: 43px; height: 43px; }
-  .completion-tag { margin-left: 0; }
-  .report-kpis, .report-chart-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-  .report-kpis article { padding: 12px; }
-  .report-kpis strong { font-size: 25px; }
-  .report-chart-grid { grid-template-columns: minmax(0, 1fr); }
-  .report-section-title { align-items: flex-start; flex-wrap: wrap; }
-  .load-report-actions { flex-wrap: wrap; padding: 14px 16px; }
-  .load-report-actions > span { width: 100%; font-size: 10px; }
-  .load-report-actions button { flex: 1; font-size: 11px; padding-inline: 9px; }
-}
+.load-report-body{overflow:auto;min-height:0;padding:24px 28px;color:#365b40}.report-cover{display:flex;align-items:center;gap:14px;margin-bottom:20px}.report-cover small{font-size:9px;letter-spacing:1.2px;color:#89977d}.report-cover h3{font-size:22px;margin:6px 0}.report-cover p{font-size:12px;color:#85967a}.report-cover>span{margin-left:auto;font-size:11px;color:#89977d;white-space:nowrap}
+.goal-verdict{display:flex;align-items:flex-start;gap:13px;padding:20px;border:1px solid #e2d4ad;border-radius:12px;background:#fff8e8;color:#96713a}.goal-verdict.passed{background:#eaf5e7;border-color:#bfd9b5;color:#356e43}.goal-verdict.failed{background:#fff0ea;border-color:#e8b9a8;color:#a84e35}.goal-verdict h3{font-size:23px}.goal-verdict p{font-size:13px;margin-top:10px;line-height:1.8}.goal-verdict small{display:block;font-size:11px;line-height:1.8;margin-top:8px}
+.goal-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:18px}.goal-kpis article{padding:16px;border:1px solid #e3ebdc;border-radius:9px;background:#f6f9f2}.goal-kpis span{font-size:11px;color:#7e9273}.goal-kpis strong{display:block;font:30px var(--mono);margin:12px 0}.goal-kpis em{font-size:14px;font-style:normal}.goal-kpis small{font-size:10px;line-height:1.8;color:#8b9b80}
+.goal-progress{height:7px;overflow:hidden;border-radius:5px;background:#eaf0e5;margin-top:16px}.goal-progress i{display:block;height:100%;background:#ba974e}.goal-progress .passed{background:#589363}.goal-progress .failed{background:#cd8164}.judgement-rule,.report-source{font-size:11px;line-height:1.9;color:#8b9b81;margin:12px 0}.report-metadata{display:flex;flex-wrap:wrap;gap:12px 20px;padding:15px 0;border-block:1px solid #e3ebdc;font-size:11px;color:#819475}.report-metadata code{width:100%;overflow-wrap:anywhere}
+h4{font-size:14px}.goal-issues{padding:17px;margin-top:20px;border:1px solid #e3ebdc;background:#f7faf3;border-radius:9px}.goal-issues.failed{border-color:#ead0bd;background:#fff8ef}.goal-issues p,.goal-issues li{font-size:12px;line-height:1.9;margin-top:8px}.goal-issues ul{padding-left:18px}.supporting-metrics{margin-top:22px}.supporting-metrics>div{display:flex;flex-wrap:wrap;gap:12px 24px;font-size:11px;color:#839775;margin-top:14px}.supporting-metrics b{font-family:var(--mono);color:#3f6b48}.report-chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:24px}.report-chart-grid section{min-width:0;border:1px solid #e3ebdc;border-radius:9px;padding:16px 0 6px}.report-chart-grid h4,.report-chart-grid p{margin-inline:16px}.report-chart-grid p,.report-stages p{font-size:10px;color:#8c9e7e;line-height:1.8;margin-top:8px}.report-stages{margin-top:24px}.report-table-wrap{overflow:auto;margin-top:12px}table{width:100%;border-collapse:collapse;font-size:12px;text-align:left;white-space:nowrap}th,td{padding:11px 14px;border-bottom:1px solid #e5eddf}th{background:#f4f8ef;color:#879b7a;font-weight:500}.load-report-actions>span{margin-right:auto;font-size:10px;color:#8a9a7e}
+@media(max-width:700px){.load-report-body{padding:18px 16px}.report-cover{flex-wrap:wrap}.report-cover>span{margin-left:0}.goal-verdict{padding:16px}.goal-verdict h3{font-size:19px}.goal-kpis{grid-template-columns:1fr 1fr;gap:8px}.goal-kpis strong{font-size:25px}.report-chart-grid{grid-template-columns:1fr}.load-report-actions{flex-wrap:wrap}.load-report-actions>span{width:100%}}
 </style>

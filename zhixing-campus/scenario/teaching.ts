@@ -26,6 +26,9 @@ export const classroomDetails: Record<string, { features: string[]; rule: string
   F1: { features: ["白板", "无线网络", "讨论桌"], rule: "小组学习与研讨，请保持安静并按时归还座椅。", hours: "08:00–22:00" },
   F7: { features: ["投影", "可移动桌椅", "无线网络"], rule: "适合课程研讨与小组活动，离开时关闭设备。", hours: "08:00–20:00" },
   F8: { features: ["多媒体", "讲台", "白板"], rule: "适合学习分享与社团培训，请提前准备活动材料。", hours: "08:00–20:00" },
+  F9: { features: ["投影", "白板", "无线网络"], rule: "适合班级学习交流，请保持教室整洁并关闭设备。", hours: "08:00–20:00" },
+  F10: { features: ["阶梯座席", "多媒体", "扩音设备"], rule: "适合专题培训，请按座席容量组织人员，保持通道畅通。", hours: "08:00–20:00" },
+  F11: { features: ["舞台", "音响", "大型投影"], rule: "大型活动请提前与教师确认设备需求，人数不得超过 200 人。", hours: "08:00–20:00" },
 };
 
 export const bookingWindowDays = 14;

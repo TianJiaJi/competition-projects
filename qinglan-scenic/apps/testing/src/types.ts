@@ -98,7 +98,14 @@ export interface LoadEvent {
   level: number;
   concurrency: number;
 }
+export interface LoadModelProfile {
+  kind: 'peak-overshoot-demo';
+  seed: number;
+  minOvershootPercent: number;
+  maxOvershootPercent: number;
+}
 export interface LoadResult {
+  loadModel?: LoadModelProfile;
   samples: Sample[];
   observations: Sample[];
   frames: Frame[];
@@ -109,6 +116,7 @@ export interface LoadResult {
   status: "running" | "completed" | "stopped";
 }
 export interface MeasurementReport {
+  loadModel?: LoadModelProfile;
   id: string;
   taskId?: string;
   handoffId?: string;

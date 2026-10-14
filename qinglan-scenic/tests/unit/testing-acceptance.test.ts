@@ -25,7 +25,7 @@ it('只有全部范围及人工补充确认完成，报告才通过', async () =
   for(const page of campusProject.pages)for(const [index] of page.checks.entries())s.uiChecks[`${page.id}:${index}`]={pageId:page.id,index,result:'passed',note:'人工检查通过',source:'manual-observation',savedAt:new Date().toISOString()};
   for(const endpoint of resolveEndpoints(deliverySystem()))s.apiResults[endpoint.id]=modelSample(endpoint);
   const session=new SpecialSession(()=>{},0,undefined,'campus');for(const a of assignments)for(const step of [0,1,2])await session.advance(a.id,step);s.specialRuns=session.snapshot();s.specialGeneratedAt=new Date().toISOString();session.dispose();
-  s.reports=[{id:'load-1',kind:'load',system:deliverySystem(),startedAt:new Date().toISOString(),status:'completed',elapsedMs:10000,samples:[modelSample(resolveEndpoints(deliverySystem())[1])],observations:[],frames:[],events:[],config:{concurrency:5,duration:10,rps:0,endpointId:'delivery-availability'}}];s.latestLoadId='load-1';
+  s.reports=[{id:'load-1',kind:'load',system:deliverySystem(),startedAt:new Date().toISOString(),status:'completed',elapsedMs:10000,samples:[modelSample(resolveEndpoints(deliverySystem())[1])],observations:[],frames:[{second:10,concurrency:5,rps:1,targetRps:1,p50:1,p95:1,p99:1,failed:0,level:5,phase:'completed',windowSeconds:1,completed:1}],events:[],config:{concurrency:5,duration:10,rps:0,endpointId:'delivery-availability'}}];s.latestLoadId='load-1';
   expect(buildAcceptance(s).verdict).toBe('passed');s.apiNotes['delivery-health']={note:'',checkpoint:'人工确认',result:'pending'};expect(buildAcceptance(s).verdict).toBe('partial');s.apiNotes['delivery-health'].result='passed';expect(buildAcceptance(s).verdict).toBe('passed');
 });
 it('超大历史原始证据整体淘汰，任务与独立报告快照仍可恢复', () => {

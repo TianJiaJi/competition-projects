@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import { ArrowRight, Check, CheckCheck, FileText, Fingerprint, LockKeyhole, Package, Play, RefreshCw, RotateCcw, ShieldCheck, Users, Workflow, LoaderCircle } from "lucide-vue-next";
 import ModalFrame from "./ModalFrame.vue";
 import { businessMetrics, definition, scenarios, campusText, campusScenarios, type ScenarioEvent, type ScenarioId, type ScenarioRuns } from "./special-engine";
-const props = defineProps<{ runs: ScenarioRuns; busy: boolean; busyId: ScenarioId | null; campus?: boolean }>();
+const props = defineProps<{ runs: ScenarioRuns; busy: boolean; busyId: ScenarioId | null; campus?: boolean; activeId?: ScenarioId; hideReport?: boolean }>();
 const emit = defineEmits<{ advance: [id: ScenarioId, step: number]; reset: [id: ScenarioId, parameter?: string]; report: []; select: [id: ScenarioId] }>();
 const selected = ref<ScenarioId>(props.campus ? 'duplicate' : 'claim'), selectedEvent = ref<ScenarioEvent | null>(null);
 const run = computed(() => props.runs[selected.value]), info = computed(() => definition(selected.value,props.campus?'campus':'generic'));
@@ -26,7 +26,20 @@ const status = (step: number) => step === 3 ? "已核验" : step ? "进行中" :
 const time = (at: string) => `${new Date(at).toLocaleTimeString("zh-CN", { timeZone: "Asia/Shanghai", hour12: false })}.${String(new Date(at).getMilliseconds()).padStart(3, "0")}`;
 const json = (value: unknown) => JSON.stringify(value, null, 2);
 const stateLabels: Record<string, string> = { orderId: "订单编号", owner: "订单持有人", stock: "库存", minStock: "最低库存", version: "版本", orderState: "订单状态", claimRecords: "领取记录", orders: "创建订单", writes: "业务写入", responseIds: "返回订单编号", denied: "权限拦截", sensitiveFields: "返回敏感字段", staleIgnored: "保护旧消息" };
+const requestViewport=ref<HTMLElement|null>(null);
+watch(()=>run.value.requests.find(request=>request.status==='processing')?.id,async id=>{
+  if(!id)return;
+  await nextTick();
+  const viewport=requestViewport.value;
+  const token=Array.from(viewport?.querySelectorAll<HTMLElement>('[data-request-id]') || []).find(item=>item.dataset.requestId===id);
+  if(viewport && token){
+    const bounds=viewport.getBoundingClientRect(),current=token.getBoundingClientRect();
+    if(current.bottom>bounds.bottom)viewport.scrollTop+=current.bottom-bounds.bottom;
+    else if(current.top<bounds.top)viewport.scrollTop+=current.top-bounds.top;
+  }
+});
 watch(() => run.value.id, () => { selectedEvent.value = null; });
+watch(()=>props.activeId,id=>{if(id && visibleScenarios.value.some(item=>item.id===id))selected.value=id;},{immediate:true});
 watch(selected,id=>emit('select',id));
 function inspectRequest(id: string) { selectedEvent.value = [...run.value.events].reverse().find(event => event.requestId === id) || null; }
 </script>
@@ -42,7 +55,7 @@ function inspectRequest(id: string) { selectedEvent.value = [...run.value.events
     </div>
     <div class="special-summary">
       <span><CheckCheck :size="16" />已核验 <b>{{ completed }} / {{ visibleScenarios.length }}</b> 项 <em>·</em> 断言通过 <b>{{ checks.filter(check => check.passed).length }} / {{ checks.length }}</b></span>
-      <button class="secondary small" :disabled="busy || completed === 0" @click="emit('report')"><FileText :size="15" />生成专项验收报告</button>
+      <button v-if="!hideReport" class="secondary small" :disabled="busy || completed === 0" @click="emit('report')"><FileText :size="15" />生成专项验收报告</button>
     </div>
     <div class="special-columns">
       <section class="scenario-board panel" :aria-label="`${info.name}操作区`">
@@ -58,8 +71,8 @@ function inspectRequest(id: string) { selectedEvent.value = [...run.value.events
         </div>
         <div class="request-lane">
           <div class="lane-heading"><span>参与请求 <b>{{ processed }} / {{ run.requests.length }}</b><small v-if="contested && run.requests.length"> · 按受理顺序</small></span><button v-if="successfulRequest" class="request-success" :aria-label="`查看${successfulRequest.actor}的${successfulRequest.result}记录`" @click="inspectRequest(successfulRequest.id)"><Check :size="12" />{{ successfulRequest.actor }} · {{ successfulRequest.result }}<ArrowRight :size="12" /></button><small v-else>{{ processing ? '正在执行当前操作' : run.step ? '点击请求可查看处理记录' : '准备条件后显示请求队列' }}</small></div>
-          <div class="request-grid" v-if="run.requests.length" :key="run.id">
-            <button v-for="request in orderedRequests" :key="request.id" :class="['request-token', request.status]" :disabled="['queued', 'processing'].includes(request.status)" :aria-label="`${request.actor} ${request.action} ${request.result}`" @click="inspectRequest(request.id)">
+          <div ref="requestViewport" class="request-grid" v-if="run.requests.length" :key="run.id">
+            <button v-for="request in orderedRequests" :key="request.id" :data-request-id="request.id" :class="['request-token', request.status]" :disabled="['queued', 'processing'].includes(request.status)" :aria-label="`${request.actor} ${request.action} ${request.result}`" @click="inspectRequest(request.id)">
               <LoaderCircle v-if="request.status === 'processing'" class="spinning" :size="14" /><Check v-else-if="request.status === 'accepted'" :size="14" /><ShieldCheck v-else-if="['protected', 'reused'].includes(request.status)" :size="14" /><Users v-else :size="14" />
               <span><b>{{ request.actor }}<em v-if="['duplicate', 'retry', 'callback'].includes(selected)"> · {{ request.action }}</em></b><small>{{ request.result }}</small></span>
             </button>

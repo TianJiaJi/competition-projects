@@ -13,3 +13,18 @@ playwright-report/
 **/服务器登录登记表.local.*
 **/docs/部署/*.key
 **/docs/部署/*.pem
+
+# Local presentation materials (keep on disk, never publish)
+*.ppt
+*.pptx
+*.pps
+*.ppsx
+*演讲稿*
+*讲解稿*
+*演示稿*
+*答辩脚本*
+*提词*
+
+# Browser automation artifacts and accidental Windows device file
+.playwright-cli/
+/nul

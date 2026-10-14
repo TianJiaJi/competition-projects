@@ -59,7 +59,7 @@ export const leaveStatusLabel: Record<BookingStatus, string> = {
   ...bookingStatusLabel,
   approved: "已通过",
 };
-export const bookingSlots = ["09:00–10:00", "14:00–15:00", "18:00–19:00"] as const;
+export { bookingSlots, validBookingCount } from "./rules";
 export function todayInShanghai() {
   return new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Shanghai" }).format(new Date());
 }

@@ -4,12 +4,13 @@ import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { scenario } from "../scenario/config.ts";
+import { bookingSlots, validBookingCount } from "../packages/bookings/src/rules.ts";
 import { validateLeaveDetails, validLeaveTime, leaveBounds } from "../packages/bookings/src/leave.ts";
 import { bookingWindowDays, demoClass, demoTeacher, leaveTypes, leaveWindowDays, studentFor } from "../scenario/teaching.ts";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const defaultDataFile = join(root, ".local", "booking-requests.json");
-const slots = ["09:00–10:00", "14:00–15:00", "18:00–19:00"];
+const slots = bookingSlots;
 const today = () => new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Shanghai" }).format(new Date());
 const nowTime = () => new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Shanghai", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date());
 const fail = (status, message) => { throw { status, message }; };
@@ -120,7 +121,7 @@ export function createBookingServer({ dataFile = defaultDataFile, leaveFile = jo
         const count = input.count;
         if (!validDate(date, bookingWindowDays)) fail(400, "请选择未来 14 天内的有效日期");
         if (!slots.includes(time)) fail(400, "请选择有效的预约时段");
-        if (!Number.isInteger(count) || count < 1 || count > venue.capacity) fail(400, `使用人数应为 1–${venue.capacity}`);
+        if (!validBookingCount(count, venue.capacity)) fail(400, `使用人数应为 1–${venue.capacity} 的整数`);
         if (activity.length < 2) fail(400, "活动名称需 2–50 字");
         if (purpose.length < 2) fail(400, "使用用途需 2–200 字");
         if (!/^1\d{10}$/.test(phone)) fail(400, "请填写 11 位联系人手机号");

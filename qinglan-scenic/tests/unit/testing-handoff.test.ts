@@ -1,12 +1,12 @@
 import { expect, it, vi } from 'vitest';
 import { apiDisplayTiming } from '../../apps/testing/src/api-display-timing';
-it('API在加速后减速8%的预算包含三次模拟停顿',()=>{
+it('API在加速后两轮各减速8%的预算包含三次模拟停顿',()=>{
  const timing=apiDisplayTiming(110);
  expect(timing).toHaveLength(110);
- expect(timing.reduce((sum,t)=>sum+t.delayMs,0)).toBe(Math.round(110*25/1.2/0.92));
+ expect(timing.reduce((sum,t)=>sum+t.delayMs,0)).toBe(Math.round(110*25/1.2/0.92/0.92));
  expect(timing.filter(t=>t.stalled)).toHaveLength(3);
  expect(timing.filter(t=>t.stalled).every(t=>t.delayMs>=240)).toBe(true);
- expect(apiDisplayTiming(1)).toEqual([{delayMs:23,stalled:false}]);
+ expect(apiDisplayTiming(1)).toEqual([{delayMs:25,stalled:false}]);
  expect(apiDisplayTiming(0)).toEqual([]);
 });
 import { startFreshTask } from '../../apps/testing/src/runtime-task';

@@ -12,19 +12,19 @@ test('API快速运行可切换UI保存和汇总，运行不中断且保留全部
  expect(Date.now()-started).toBeLessThan(20000);
  await nav(page,'UI测试');await expect(page.getByRole('combobox',{name:'检查结果1',exact:true})).toHaveText('通过');
 });
-test('API和压力可并行，停止API不会停止压力，其他功能仍可用',async({page})=>{
- await receive(page);await generateApi(page);await nav(page,'压力测试');
- await page.getByLabel('持续时长',{exact:true}).fill('60');await page.getByRole('button',{name:'开始压力测试',exact:true}).click();
+test('API和并发测试可并行，停止API不会停止并发测试，其他功能仍可用',async({page})=>{
+ await receive(page);await generateApi(page);await nav(page,'并发测试');
+ await page.getByLabel('持续时长',{exact:true}).fill('60');await page.getByRole('button',{name:'开始并发测试',exact:true}).click();
  await nav(page,'API测试');await page.getByRole('button',{name:'运行全部API',exact:true}).click();
  await expect(page.getByRole('button',{name:'运行全部API',exact:true})).toBeDisabled();
  await page.getByRole('button',{name:'停止API测试',exact:true}).click();
  await expect(page.getByRole('status')).toContainText('API测试已停止');
- await nav(page,'压力测试');await expect(page.getByRole('button',{name:'停止压测',exact:true})).toBeVisible();
+ await nav(page,'并发测试');await expect(page.getByRole('button',{name:'停止并发测试',exact:true})).toBeVisible();
  await expect(page.getByRole('button',{name:'加压一级',exact:true})).toBeEnabled();
  await page.getByRole('button',{name:'加压一级',exact:true}).click();
  await nav(page,'专项测试');await page.getByRole('button',{name:'生成专项用例',exact:true}).click();
  await expect(page.getByRole('group',{name:'选择专项场景'})).toBeVisible();
- await nav(page,'压力测试');await expect(page.getByRole('button',{name:'停止压测',exact:true})).toBeVisible();
- await page.getByRole('button',{name:'停止压测',exact:true}).click();
+ await nav(page,'并发测试');await expect(page.getByRole('button',{name:'停止并发测试',exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'停止并发测试',exact:true}).click();
  await nav(page,'验收报告');await expect(page.locator('.archived-reports article')).toHaveCount(2);
 });

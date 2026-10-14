@@ -1,5 +1,7 @@
 import { specialSummary, type SpecialReport } from "./special-engine";
 import { resolveEndpoints } from "./systems";
+import { assessLoadGoal, LOAD_DEFAULTS, LOAD_LIMITS } from './load-goal';
+import { createLoadModel, modelWindowConcurrency } from './load-model';
 import type {
   Check,
   Endpoint,
@@ -179,9 +181,9 @@ export function normalizeConfig(
     Number.isFinite(value)
       ? Math.max(min, Math.min(max, Math.round(value)))
       : fallback;
-  const duration = integer(input.duration, 10, 120, 60);
+  const duration = integer(input.duration, LOAD_LIMITS.minDuration, LOAD_LIMITS.maxDuration, LOAD_DEFAULTS.duration);
   return {
-    concurrency: integer(input.concurrency, 5, 1000, 1000),
+    concurrency: integer(input.concurrency, LOAD_LIMITS.minConcurrency, LOAD_LIMITS.maxConcurrency, LOAD_DEFAULTS.concurrency),
     duration,
     rps: integer(input.rps, 0, 50000, 0),
     endpointId: endpoints.some((e) => e.id === input.endpointId)
@@ -246,6 +248,8 @@ export function startLoadSession(
     config = normalizeConfig(input, endpoints);
   const endpoint = endpoints.find((e) => e.id === config.endpointId)!;
   const schedule = new PressureSchedule(config);
+  const loadModel = createLoadModel();
+  let lastRecordedConcurrency = schedule.concurrency;
   const samples: Sample[] = [],
     observations: Sample[] = [],
     frames: Frame[] = [];
@@ -267,7 +271,7 @@ export function startLoadSession(
     latestTargetRps = 0;
   const elapsed = () =>
     stoppedAt ?? Math.min(config.duration, (performance.now() - start) / 1000);
-  const frame = (second: number): Frame => ({
+  const frame = (second: number, concurrency = schedule.concurrency): Frame => ({
     second,
     cumulativeCompleted,
     p50: latestStats.p50,
@@ -275,12 +279,13 @@ export function startLoadSession(
     p99: latestStats.p99,
     rps: latestRps,
     failed: latestStats.failed,
-    concurrency: schedule.concurrency,
+    concurrency,
     targetRps: latestTargetRps,
     level: schedule.level,
     phase: status === "running" ? schedule.phase : status,
   });
   const snapshot = (): LoadResult => ({
+    loadModel: { ...loadModel },
     samples: [...samples],
     observations: [...observations],
     frames: [...frames],
@@ -326,7 +331,7 @@ export function startLoadSession(
       signal.removeEventListener("abort", abort);
     }
     status = signal.aborted ? "stopped" : "completed";
-    frames.push(frame(elapsed()));
+    frames.push(frame(elapsed(), lastRecordedConcurrency));
     const result = snapshot();
     update(result);
     return result;
@@ -347,14 +352,15 @@ export function startLoadSession(
   function sampleWindow(second: number) {
     const windowSeconds = second - lastSecond;
     if (windowSeconds <= 0) return;
-    const pressure = schedule.factor;
+    const concurrency = modelWindowConcurrency(schedule.concurrency, schedule.level, second, loadModel.seed);
+    const pressure = concurrency / config.concurrency;
     // Compact latency buckets represent many completions without capping the request total.
     const distribution = Array.from({ length: 64 }, (_, index) =>
       modelSample(endpoint, bucketSequence + index, pressure, second, second - schedule.lastRaise));
     bucketSequence += distribution.length;
     const meanResponseMs = summarize(distribution).average;
-    const capacityRps = modeledThroughput(schedule.concurrency, meanResponseMs);
-    latestTargetRps = modeledThroughput(schedule.concurrency, meanResponseMs, config.rps * pressure);
+    const capacityRps = modeledThroughput(concurrency, meanResponseMs);
+    latestTargetRps = modeledThroughput(concurrency, meanResponseMs, config.rps * Math.min(1, pressure));
     const expected = latestTargetRps * windowSeconds + fractionalCompletions;
     const count = Math.floor(expected);
     fractionalCompletions = expected - count;
@@ -366,7 +372,8 @@ export function startLoadSession(
     cumulativeCompleted += count;
     latestStats = summarize(batch);
     latestRps = count / windowSeconds;
-    frames.push({ ...frame(second), windowSeconds, completed: count, meanResponseMs, capacityRps });
+    lastRecordedConcurrency = concurrency;
+    frames.push({ ...frame(second, concurrency), windowSeconds, completed: count, meanResponseMs, capacityRps });
     lastSecond = second;
     emit();
   }
@@ -411,16 +418,17 @@ export function loadReportSummary(report: MeasurementReport) {
   const statistics = summarize(report.samples, report.elapsedMs);
   const observedStatistics = summarize(report.observations, report.elapsedMs);
   const endpoint = resolveEndpoints(report.system).find((item) => item.id === report.config?.endpointId);
-  const peakConcurrency = Math.max(0, ...report.frames.map((frame) => frame.concurrency));
+  const goal = assessLoadGoal(report, statistics.count);
   return {
+    goal,
     endpointName: endpoint?.name || "未记录接口",
     endpointPath: endpoint?.path || "—",
     endpointMethod: endpoint?.method || 'GET',
     statistics,
     observedStatistics,
-    peakConcurrency,
+    peakConcurrency: goal.peakConcurrency,
     peakRps: Math.max(0, ...report.frames.map((frame) => frame.rps)),
-    reachedTarget: Boolean(report.config && peakConcurrency >= report.config.concurrency),
+    reachedTarget: goal.reachedTarget,
     modelCount: sampleCount(report.samples.filter((sample) => sample.source === "model")),
     fallbackCount: sampleCount(report.samples.filter((sample) => sample.fallback)),
     stages: Array.from({ length: 6 }, (_, level) => {

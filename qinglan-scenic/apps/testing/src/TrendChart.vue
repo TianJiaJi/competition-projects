@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, useId } from "vue";
 import type { Frame, LoadEvent } from "./types";
+import { chartAxis, formatAxisTick, timeTicks } from './chart-axis';
+import { LOAD_DEFAULTS } from './load-goal';
 const props = withDefaults(
   defineProps<{
     frames: Frame[];
@@ -13,6 +15,7 @@ const props = withDefaults(
     events?: LoadEvent[];
     compact?: boolean;
     prominent?: boolean;
+    showTarget?: boolean;
   }>(),
   { kind: "latency", events: () => [] },
 );
@@ -33,26 +36,19 @@ const height = computed(() =>
     : props.compact ? 150 : 215,
 ),
   bottom = computed(() => height.value - 30);
-const rightInset = computed(() => props.prominent && props.kind === "latency" ? 18 : 52);
+const leftInset = computed(() => Math.max(43, ...leftAxis.value.ticks.map(tick => formatAxisTick(tick).length * 7 + 16)));
+const rightInset = computed(() => props.kind === 'load' ? Math.max(50, ...rightAxis.value.ticks.map(tick => formatAxisTick(tick).length * 7 + 20)) : 18);
 const horizon = computed(
   () => props.duration || Math.max(24, ...props.frames.map((f) => f.second)),
 );
-const leftMax = computed(() =>
-  props.kind === "load"
-    ? props.concurrency || 1000
-    : props.latencyMax ||
-      Math.max(
-        120,
-        Math.ceil(Math.max(0, ...props.frames.map((f) => f.p95)) / 50) * 50,
-      ),
-);
-const rightMax = computed(() => {
-  const maximum = Math.max(120, props.rps || 0, ...props.frames.map(frame => frame.rps));
-  const step = 10 ** Math.floor(Math.log10(maximum));
-  return Math.ceil(maximum / step) * step;
-});
+const leftAxis = computed(() => props.kind === 'load'
+  ? chartAxis(Math.max(props.concurrency || LOAD_DEFAULTS.concurrency, ...props.frames.map(frame => frame.concurrency)), true)
+  : chartAxis(Math.max(props.latencyMax || 120, ...props.frames.map(frame => frame.p95))));
+const rightAxis = computed(() => chartAxis(Math.max(120, props.rps || 0, ...props.frames.map(frame => frame.rps))));
+const leftMax = computed(() => leftAxis.value.max), rightMax = computed(() => rightAxis.value.max);
+const seconds = computed(() => timeTicks(horizon.value));
 const x = (second: number) =>
-  43 + Math.max(0, Math.min(1, second / horizon.value)) * (width.value - 43 - rightInset.value);
+  leftInset.value + Math.max(0, Math.min(1, second / horizon.value)) * (width.value - leftInset.value - rightInset.value);
 const y = (value: number, max = leftMax.value) =>
   bottom.value - Math.max(0, Math.min(1, value / max)) * (bottom.value - 25);
 const series = (
@@ -78,37 +74,24 @@ const last = computed(() => props.frames.at(-1));
           <stop offset="100%" stop-color="#3b8066" stop-opacity=".02" />
         </linearGradient>
       </defs>
-      <g v-for="tick in [0, 0.25, 0.5, 0.75, 1]" :key="tick">
-        <line
-          x1="43"
-          :x2="width - rightInset"
-          :y1="y(leftMax * tick)"
-          :y2="y(leftMax * tick)"
-          stroke="#e1e9e2"
-          stroke-dasharray="3 5"
-        />
-        <text x="33" :y="y(leftMax * tick) + 3" text-anchor="end">
-          {{ Math.round(leftMax * tick) }}
-        </text>
-        <text
-          v-if="kind === 'load'"
-          :x="width - 41"
-          :y="y(leftMax * tick) + 3"
-          class="axis-amber"
-        >
-          {{ Math.round(rightMax * tick) }}
-        </text>
+      <g class="axis-left">
+        <g v-for="tick in leftAxis.ticks" :key="tick">
+          <line :x1="leftInset" :x2="width - rightInset" :y1="y(tick)" :y2="y(tick)" stroke="#e1e9e2" stroke-dasharray="3 5"/>
+          <text class="axis-tick" :x="leftInset - 10" :y="y(tick) + 3" text-anchor="end">{{ formatAxisTick(tick) }}</text>
+        </g>
       </g>
-      <text x="12" y="12">{{ kind === "load" ? "并发" : "ms" }}</text>
-      <text
-        v-if="kind === 'load'"
-        :x="width - 10"
-        y="12"
-        text-anchor="end"
-        class="axis-amber"
-      >
-        req/s
-      </text>
+      <g v-if="kind === 'load'" class="axis-right axis-amber">
+        <g v-for="tick in rightAxis.ticks" :key="tick">
+          <line :x1="width - rightInset" :x2="width - rightInset + 4" :y1="y(tick, rightMax)" :y2="y(tick, rightMax)" stroke="#d8c8a7"/>
+          <text class="axis-tick axis-amber" :x="width - rightInset + 10" :y="y(tick, rightMax) + 3">{{ formatAxisTick(tick) }}</text>
+        </g>
+      </g>
+      <text class="axis-unit" :x="leftInset - 10" y="12" text-anchor="end">{{ kind === 'load' ? '并发' : 'ms' }}</text>
+      <text v-if="kind === 'load'" class="axis-unit axis-amber" :x="width - rightInset + 10" y="12">req/s</text>
+      <g v-if="kind==='load' && showTarget && concurrency" class="goal-target-line">
+        <line :x1="leftInset" :x2="width-rightInset" :y1="y(concurrency)" :y2="y(concurrency)" stroke="#a7813f" stroke-dasharray="5 5"/>
+        <text :x="width-rightInset-4" :y="y(concurrency)+12" text-anchor="end" class="axis-tick axis-amber">目标 {{formatAxisTick(concurrency)}}</text>
+      </g>
       <polygon
         v-if="frames.length"
         :points="area"
@@ -190,13 +173,14 @@ const last = computed(() => props.frames.at(-1));
         </rect>
       </g>
       <text
-        v-for="tick in [0, 0.25, 0.5, 0.75, 1]"
+        v-for="(tick, index) in seconds"
         :key="`x-${tick}`"
-        :x="x(horizon * tick)"
+        class="axis-time"
+        :x="x(tick)"
         :y="height - 8"
-        text-anchor="middle"
+        :text-anchor="index === 0 ? 'start' : index === seconds.length - 1 ? 'end' : 'middle'"
       >
-        {{ Math.round(horizon * tick) }} s
+        {{ formatAxisTick(tick) }} s
       </text>
       <text
         v-if="!frames.length"
@@ -209,3 +193,10 @@ const last = computed(() => props.frames.at(-1));
     </svg>
   </div>
 </template>
+<style scoped>
+.trend-chart { min-width:0; }
+svg { display:block; width:100%; height:auto; }
+text { font:11px var(--mono,Consolas,monospace); font-variant-numeric:tabular-nums; fill:#718568; }
+.axis-unit { font-size:10px; fill:#607659; }
+.axis-amber { fill:#a27c3e; }
+</style>

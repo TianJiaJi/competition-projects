@@ -85,6 +85,23 @@ it("校验完整预约、可用性、班级审核、占用冲突、取消与重�
   expect((await call("/api/bookings?owner=%E6%9E%97%E6%82%A6")).payload.data[0].status).toBe("cancelled");
 });
 
+it("六个空间支持丰富时段并按实际容量限制整数人数", async () => {
+  for (const [facilityId, capacity] of [["F1", 12], ["F7", 36], ["F8", 40], ["F9", 60], ["F10", 100], ["F11", 200]] as const) {
+    const available = await call(`/api/bookings/availability?facilityId=${facilityId}&date=${after(2)}`);
+    expect(available.status).toBe(200);
+    expect(available.payload.data.map((item: { time: string }) => item.time)).toEqual([
+      "09:00–10:00", "10:00–11:00", "11:00–12:00", "14:00–15:00",
+      "15:00–16:00", "16:00–17:00", "18:00–19:00", "19:00–20:00",
+    ]);
+    for (const count of [0, -1, 1.5, capacity + 1, "10", null]) {
+      expect((await call("/api/bookings", "POST", { ...booking(), facilityId, count })).status).toBe(400);
+    }
+    expect((await call("/api/bookings", "POST", { ...booking(), facilityId, count: 1, time: "10:00–11:00" })).status).toBe(201);
+    expect((await call("/api/bookings", "POST", { ...booking(), facilityId, count: capacity, time: "19:00–20:00" })).status).toBe(201);
+    expect((await call("/api/bookings", "POST", { ...booking(), facilityId, time: "20:00–21:00" })).status).toBe(400);
+  }
+});
+
 it("学生请假秒级/跨天、重叠、拒绝与班级边界", async () => {
   expect((await call("/api/leaves", "POST", { ...leave(), endDate: after(1) })).status).toBe(400);
   expect((await call("/api/leaves", "POST", { ...leave(), reason: "短" })).status).toBe(400);

@@ -1,9 +1,31 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { FileSearch, Sparkles, ChevronRight, CheckCircle2, FileJson } from 'lucide-vue-next';
-import { apiMaterials } from './campus-handoff';
-const props = defineProps<{ parsed: boolean; generated: boolean; busy: boolean }>();
-const emit = defineEmits<{ parse: []; generate: [] }>();
-const selected = ref(apiMaterials[0].id), material = computed(() => apiMaterials.find(item=>item.id===selected.value)!);
+import { CheckCircle2 } from 'lucide-vue-next';
+import type { ApiMaterial } from './campus-handoff';
+import type { EndpointConfig } from './types';
+defineProps<{ material: ApiMaterial; config: EndpointConfig }>();
 </script>
-<template><section class="panel api-material-panel"><div class="panel-heading"><div><h2><FileJson :size="18"/>随项目交付的API材料</h2><p>材料包含接口用途、岗位身份、请求参数及响应示例。</p></div><div class="toolbar-actions"><button class="secondary" :disabled="busy || parsed" @click="emit('parse')"><FileSearch :size="15"/>{{ parsed ? '材料已解析' : '解析API材料' }}</button><button class="primary" :disabled="busy || !parsed || generated" @click="emit('generate')"><Sparkles :size="15"/>{{ generated ? '用例已生成' : '生成测试用例' }}</button></div></div><div v-if="parsed" class="material-parse-track"><span><CheckCircle2 :size="14"/>读取 {{ apiMaterials.length }} 项接口</span><ChevronRight :size="13"/><span>识别 GET / POST / PATCH</span><ChevronRight :size="13"/><span>关联响应契约与校验点</span><span class="badge good">材料解析完成</span></div><div class="api-material-grid"><div class="material-directory"><button v-for="item in apiMaterials" :key="item.id" :class="{selected:selected===item.id}" @click="selected=item.id"><span class="method" :class="item.method.toLowerCase()">{{ item.method }}</span><b>{{ item.name }}</b></button></div><div class="material-detail"><div class="material-title"><span class="method" :class="material.method.toLowerCase()">{{ material.method }}</span><h3>{{ material.name }}</h3><span class="badge muted">{{ material.role }}</span></div><code class="endpoint-path">http://localhost:5606{{ material.path }}</code><p>{{ material.purpose }}</p><div class="material-json"><section><h4>请求参数 / 交付示例</h4><pre>{{ JSON.stringify(material.request,null,2) }}</pre></section><section><h4>预期响应 · HTTP {{ material.status }}</h4><pre>{{ JSON.stringify(material.response,null,2) }}</pre></section></div><div class="contract-line"><CheckCircle2 :size="15"/><span>验收点：{{ material.checkpoint }}</span></div></div></div></section></template>
+<template>
+  <div class="material-detail">
+    <div class="material-title"><span class="method" :class="material.method.toLowerCase()">{{material.method}}</span><h3>{{config.name}}</h3><span class="badge muted">{{material.role}}</span></div>
+    <code class="endpoint-path">http://localhost:5606{{config.path}}</code>
+    <p>{{material.purpose}}</p>
+    <div class="material-json">
+      <section><h4>请求参数 / 交付示例</h4><pre>{{JSON.stringify(material.request,null,2)}}</pre></section>
+      <section><h4>预期响应 · HTTP {{config.status}}</h4><pre>{{JSON.stringify(material.response,null,2)}}</pre></section>
+    </div>
+    <div class="contract-line"><CheckCircle2 :size="15"/><span>验收点：{{material.checkpoint}}</span></div>
+  </div>
+</template>
+<style scoped>
+.material-detail { padding:22px; }
+.material-title { align-items:flex-start; }
+.material-title h3 { flex:1; min-width:140px; line-height:1.6; color:#294b35; }
+.material-detail > p { color:#819087; }
+.endpoint-path { color:#617b69; background:#f5f8f1; line-height:1.8; }
+.material-json { gap:14px; }
+.material-json h4 { color:#72896b; }
+.material-json pre { margin-top:9px; min-height:96px; max-height:230px; background:#f5f8f1; color:#355b40; font-size:11px; }
+.contract-line { align-items:flex-start; }
+@media(max-width:1200px) { .material-json { grid-template-columns:minmax(0,1fr); } }
+@media(max-width:700px) { .material-detail { padding:16px; } }
+</style>

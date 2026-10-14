@@ -3,7 +3,8 @@ import {fixtures,receive,nav} from './helpers';
 test('批量确认切换到UI报告后释放滚动锁，验收页底部可滚动到达',async({page})=>{
  await page.setViewportSize({width:1440,height:800});await fixtures(page);await receive(page);await nav(page,'UI测试');
  await page.getByRole('button',{name:'一键完成五端检查',exact:true}).click();
- await page.getByRole('button',{name:'已人工检查，完成并生成报告',exact:true}).click();
+ await expect(page.getByRole('dialog')).toHaveCount(0);
+ await page.getByRole('button',{name:'查看报告',exact:true}).click();
  await expect(page.getByRole('dialog',{name:'UI测试报告',exact:true})).toBeVisible();
  await expect(page.locator('body')).toHaveCSS('overflow','hidden');
  await page.getByRole('button',{name:'关闭UI测试报告',exact:true}).click();

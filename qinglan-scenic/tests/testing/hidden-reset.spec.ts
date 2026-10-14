@@ -12,7 +12,7 @@ test('左下角测头像保留外观，点击直接清空且不弹确认',async(
   await expect(page.locator('.task-timeline li')).toHaveCount(0);
   await expect(page.getByRole('navigation').getByRole('button',{name:/^API测试/})).toBeDisabled();
   await page.getByRole('button',{name:'接收上游交付',exact:true}).first().click();
-  await expect(page.getByRole('status')).toContainText('新增 1 项');
+  await expect(page.locator('.delivery-task-card')).toHaveCount(1);
   await nav(page,'API测试');
   await expect(page.getByRole('button',{name:'解析API材料',exact:true})).toBeEnabled();
 });

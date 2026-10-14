@@ -1,0 +1,35 @@
+import { expect, test } from '@playwright/test';
+import { fixtures, receive, nav, generateApi, noOverflow } from './helpers';
+
+test.beforeEach(async ({ page }) => fixtures(page));
+test('接口选择使用可搜索的主题列表，支持键盘、关闭及选中保持', async ({ page }) => {
+  await receive(page); await generateApi(page); await nav(page, '并发测试');
+  const trigger = page.getByRole('button', { name: '并发测试目标接口', exact: true });
+  await expect(page.locator('.pressure-config select')).toHaveCount(0);
+  await trigger.click();
+  const search = page.getByRole('textbox', { name: '搜索目标接口' });
+  await expect(search).toBeFocused();
+  await search.fill('not-an-endpoint');
+  await expect(page.locator('.endpoint-select').getByRole('status')).toContainText('没有匹配的接口');
+  await search.fill('/api/bookings/availability');
+  const option = page.getByRole('option').first();
+  const name = await option.locator('strong').innerText();
+  await search.press('ArrowDown');
+  await expect(option).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(trigger).toContainText(name);
+  await expect(trigger).toBeFocused();
+  await expect(page.getByRole('listbox')).toHaveCount(0);
+  await trigger.click();
+  await expect(page.getByRole('option', { selected: true })).toContainText(name);
+  await noOverflow(page);
+  await page.screenshot({ path: '.local/qa/testing-endpoint-select.png', fullPage: true });
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('listbox')).toHaveCount(0);
+  await trigger.click();
+  await page.getByRole('heading', { name: '并发测试，观察多请求下的系统表现。', exact: true }).click();
+  await expect(page.getByRole('listbox')).toHaveCount(0);
+  await page.getByRole('button', { name: '开始并发测试', exact: true }).click();
+  await expect(trigger).toBeDisabled();
+  await page.getByRole('button', { name: '停止并发测试', exact: true }).click();
+});

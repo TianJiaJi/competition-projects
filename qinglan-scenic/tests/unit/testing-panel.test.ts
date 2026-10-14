@@ -313,7 +313,7 @@ describe("staged pressure lifecycle", () => {
       endpoints,
     );
     expect(normalized).toMatchObject({
-      concurrency: 1000,
+      concurrency: 2000,
       duration: 120,
       rps: 9999,
       endpointId: "live",
@@ -433,7 +433,9 @@ describe("staged pressure lifecycle", () => {
     expect(stats.count).toBe(cumulative);
     expect(stats.count).toBeGreaterThan(12000);
     expect(result.samples.length).toBeLessThanOrEqual((duration + 6) * 64);
-    expect(windows.filter(window => window.concurrency === 1000).every(window => window.rps > 2000)).toBe(true);
+    const peaks = windows.filter(window => window.level === 5);
+    expect(peaks.length).toBeGreaterThan(0);
+    expect(peaks.every(window => window.concurrency > 1000 && window.concurrency <= 1040 && window.rps > 2000)).toBe(true);
     expect(result.elapsedMs).toBe(duration * 1000);
     const report: Report = { ...result, id: "auto-load", kind: "load", system, startedAt: new Date().toISOString(),
       status: "completed", config: { ...config, concurrency: 1000, duration, rps: 0 } };
@@ -561,10 +563,11 @@ describe("staged pressure lifecycle", () => {
     const html = loadReportHtml({ ...report, system: { ...system, name: '<img src=x onerror="alert(1)">' } });
     expect(html).toContain("&lt;img src=x onerror=&quot;");
     expect(html).not.toContain("<img");
-    expect(html).toContain("本轮阶段记录已保存");
-    expect(html).toContain("本轮测试成果");
-    expect(html).not.toMatch(/模拟|测试模式/);
-    expect(html).not.toMatch(/实际请求记录|失败|异常|未到达|未完成整轮/);
+    expect(html).toContain("本轮已提前停止");
+    expect(html).toContain("未达标 · 未达到并发目标");
+    expect(html).toContain("距离目标差额");
+    expect(html).toContain("本地模型负载记录");
+    expect(html).toContain("未达标问题 · 已记录");
     expect(html).not.toContain("第 5 级");
     expect(reportDocument(report).observedStatistics.failed).toBe(1);
     expect(html.match(/<svg /g)).toHaveLength(2);

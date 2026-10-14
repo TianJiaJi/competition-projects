@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onBeforeUnmount } from "vue";
-import { createBookingClient, todayInShanghai, type SlotAvailability } from "@scene/bookings";
+import { createBookingClient, todayInShanghai, validBookingCount, type SlotAvailability } from "@scene/bookings";
 import { bookingWindowDays, classroomDetails, demoClass, studentFor } from "../../../../scenario/teaching";
 import { scenario, selection, state, themeStyle } from "../store";
 import { back, home, navigate, notify } from "../platform";
@@ -63,7 +63,7 @@ function next() {
   } else if (stage.value === "details") {
     if (activity.value.trim().length < 2 || activity.value.trim().length > 50) error.value = "活动名称需 2–50 字";
     else if (purpose.value.trim().length < 2 || purpose.value.trim().length > 200) error.value = "使用用途需 2–200 字";
-    else if (!Number.isInteger(+count.value) || +count.value < 1 || +count.value > (venue.value?.capacity ?? 0)) error.value = `使用人数应为 1–${venue.value?.capacity}`;
+    else if (!validBookingCount(Number(count.value), venue.value?.capacity ?? 0)) error.value = `使用人数应为 1–${venue.value?.capacity} 的整数`;
     else if (!/^1\d{10}$/.test(phone.value.trim())) error.value = "请填写 11 位联系人手机号";
     if (!error.value) stage.value = "confirm";
   }
@@ -71,6 +71,11 @@ function next() {
 async function submit() {
   if (!state.identity) { navigate("login"); return; }
   if (sending.value || !venue.value || !slot.value) return;
+  if (!validBookingCount(Number(count.value), venue.value.capacity ?? 0)) {
+    error.value = `使用人数应为 1–${venue.value.capacity} 的整数`;
+    stage.value = "details";
+    return;
+  }
   sending.value = true;
   error.value = "";
   try {
@@ -119,7 +124,8 @@ onBeforeUnmount(() => stopAccessibility?.());
         <view class="mobile-form">
           <text class="field-label">活动名称 *</text><input v-model="activity" class="mobile-input" aria-label="活动名称" placeholder="例如：软件工程小组研讨" :maxlength="50" @blur="activity = fieldValue($event)" />
           <text class="field-label">使用用途 *</text><textarea v-model="purpose" class="mobile-textarea" aria-label="使用用途" placeholder="说明活动内容与教室使用方式" :maxlength="200" @blur="purpose = fieldValue($event)" />
-          <text class="field-label">参加人数 *</text><input v-model="count" class="mobile-input" aria-label="参加人数" type="number" placeholder="请输入人数" @blur="count = fieldValue($event)" />
+          <text class="field-label">参加人数 *</text><input v-model="count" class="mobile-input" aria-label="参加人数" type="number" :min="1" :max="venue?.capacity" :step="1" :placeholder="`请输入 1–${venue?.capacity} 的整数`" @blur="count = fieldValue($event)" />
+          <text class="booking-hint">当前场所限 1–{{ venue?.capacity }} 人，请填写整数，不得超过实际容量。</text>
           <text class="field-label">联系人手机号 *</text><input v-model="phone" class="mobile-input" aria-label="联系人手机号" type="tel" :maxlength="11" @blur="phone = fieldValue($event)" />
           <text class="field-label">补充说明（选填）</text><textarea v-model="note" class="mobile-textarea" aria-label="补充说明" placeholder="如需特殊设备或桌椅布置，可在此说明" :maxlength="200" @blur="note = fieldValue($event)" />
         </view>

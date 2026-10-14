@@ -1,5 +1,28 @@
 import { expect, test } from "@playwright/test";
 import { scenario } from "../../scenario/config";
+import { createBookingServer } from "../../scripts/booking-service.mjs";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import type { Server } from "node:http";
+let server: Server;
+let directory: string;
+test.beforeEach(async ({ page }) => {
+  directory = mkdtempSync(join(tmpdir(), "campus-layout-"));
+  server = createBookingServer({ dataFile: join(directory, "bookings.json") });
+  await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  if (!address || typeof address === "string") throw new Error("测试服务未启动");
+  await page.route("**/api/bookings/**", async route => {
+    const url = new URL(route.request().url());
+    const response = await route.fetch({ url: `http://127.0.0.1:${address.port}${url.pathname}${url.search}` });
+    await route.fulfill({ response });
+  });
+});
+test.afterEach(async () => {
+  await new Promise<void>(resolve => server.close(() => resolve()));
+  rmSync(directory, { recursive: true, force: true });
+});
 const mobileUrl = `http://localhost:${process.env.E2E_MOBILE_PORT || scenario.ports.mobile}`;
 const staffUrl = `http://localhost:${process.env.E2E_STAFF_PORT || scenario.ports.staff}`;
 async function noHorizontalOverflow(page: import("@playwright/test").Page) {
@@ -11,8 +34,9 @@ for (const width of [360, 390, 430]) {
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await page.goto(`${mobileUrl}/#/pages/booking/index`);
-    await expect(page.locator(".venue-option")).toHaveCount(3);
+    await expect(page.locator(".venue-option")).toHaveCount(6);
     await expect(page.locator("uni-picker")).toHaveCount(0);
+    await expect(page.locator(".slot-option")).toHaveCount(8);
     await expect(page.locator(".slot-option").first()).toBeVisible();
     await noHorizontalOverflow(page);
     if (width === 390) await page.screenshot({ path: "test-results/campus-student-booking-390.png", fullPage: true });

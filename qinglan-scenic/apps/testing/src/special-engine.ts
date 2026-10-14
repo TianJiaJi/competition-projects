@@ -204,6 +204,9 @@ export class SpecialSession {
       } else if (run.step === 1) {
         for (const requestId of run.acceptanceOrder) {
           const request = run.requests.find(item => item.id === requestId)!;
+          // Persisted mid-step snapshots already contain applied writes and receipts.
+          // Resume only queued/in-flight requests, never apply a completed request twice.
+          if (!['queued', 'processing'].includes(request.status)) continue;
           request.status = "processing"; request.result = "正在处理"; this.emit();
           await wait(this.pace, controller.signal); if (!valid()) return false;
           process(run, request); this.emit();
