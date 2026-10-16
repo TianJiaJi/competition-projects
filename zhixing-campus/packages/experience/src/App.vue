@@ -21,6 +21,7 @@ import {
 import {
   bookingStatusLabel,
   createBookingClient,
+  watchDemoReset,
   type BookingRequest,
 } from "@scene/bookings";
 import {
@@ -369,7 +370,12 @@ function save(input: Omit<RecordItem, "id">) {
   inform("已保存");
 }
 let stopScroll: (() => void) | undefined;
+let stopDemoReset: (() => void) | undefined;
 onMounted(() => {
+  stopDemoReset = watchDemoReset(() => {
+    sessionStorage.removeItem("zhixing:teacher-session");
+    window.location.reload();
+  }, import.meta.env.VITE_BOOKING_API_URL);
   if (terminal === "staff" && sessionStorage.getItem("zhixing:teacher-session") === "陈越") state.identity = "陈越";
   window.addEventListener("hashchange", sync);
   stopScroll = installScrollbars();
@@ -381,6 +387,7 @@ watch([page, () => state.identity], () => {
 onBeforeUnmount(() => {
   window.removeEventListener("hashchange", sync);
   stopScroll?.();
+  stopDemoReset?.();
   clearTimeout(toastTimer);
 });
 </script>

@@ -24,7 +24,8 @@ for (const terminal of ["public", "ops", "admin", "staff", "mobile"] as const) {
       requests: string[] = [];
     page.on("pageerror", (e) => errors.push(e.message));
     page.on("request", (r) => {
-      if (/^\/(api|ws)(\/|$)/.test(new URL(r.url()).pathname))
+      // Read-only reset-version synchronization is not a business request.
+      if (/^\/(api|ws)(\/|$)/.test(new URL(r.url()).pathname) && new URL(r.url()).pathname !== '/api/demo/revision')
         requests.push(r.url());
     });
     await page.goto(url(terminal));

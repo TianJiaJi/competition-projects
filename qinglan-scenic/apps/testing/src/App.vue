@@ -32,6 +32,7 @@ import { resolveEndpoints } from './systems';
 import { apiDisplayTiming } from './api-display-timing';
 import { restoreRuntimeTask, saveRuntimeTask } from './runtime-task';
 import { createBufferedAutosave } from './buffered-autosave';
+import { resetCampusDemo } from './campus-reset';
 const store = ref<CampusTaskStore>(restoreRuntimeTask());
 const autosave=createBufferedAutosave(()=>{const saved=saveRuntimeTask(store.value);if(!saved.saved)notice.value='浏览器无法保存进度，请先导出报告，避免刷新丢失。';});
 // Mutators advance revision or replace these top-level snapshots. Do not deeply
@@ -227,11 +228,22 @@ async function submitTask() {
 function exportAcceptance(kind:'json'|'html') {const source=reportStore.value,report=source.acceptance;if(!report)return;download(`campus-acceptance-${report.id}.${kind}`,kind==='json'?JSON.stringify(acceptanceDocument(report,source.completion),null,2):acceptanceHtml(report,source.completion),kind==='json'?'application/json':'text/html');}
 function openReport(id:string) {if(reportStore.value.uiReports?.some(r=>r.id===id)){uiReportId.value=id;return;}const r=reportStore.value.reports.find(r=>r.id===id);if(r?.kind==='load')loadReportId.value=id;else if(r?.kind==='special')specialReportId.value=id;else if(r?.kind==='suite')apiReportId.value=id;}
 function rawReport(id:string) {if(reportStore.value.uiReports?.some(r=>r.id===id)){exportUiReport(id);return;}const r=reportStore.value.reports.find(r=>r.id===id);if(r)exportReport(r,'json');}
-function reset() { if (anyRunning.value) return; store.value = newTaskStore(); archiveView.value=false;uiReportId.value=null;apiReportId.value=null; initSpecial(); specialReportId.value=null; loadResult.value=null; loadConfig.value=undefined; loadReportId.value=null; resetOpen.value = false; tab.value = 'center'; notice.value = '讲解流程已重置，校园项目业务数据未改动。'; }
+async function reset() {
+  if (anyRunning.value) return;
+  busy.value = '正在重置工作台与智慧校园';
+  notice.value = '正在清理校园测试数据，请稍候…';
+  try {
+    await resetCampusDemo();
+    store.value = newTaskStore(); archiveView.value=false;uiReportId.value=null;apiReportId.value=null; initSpecial(); specialReportId.value=null; loadResult.value=null; loadConfig.value=undefined; loadReportId.value=null; resetOpen.value = false; tab.value = 'center';
+    notice.value = '工作台与智慧校园已重置：测试新增的预约、请假及审批记录已清除，仅保留预置历史。已打开的校园页面将自动刷新。';
+  } catch (error) {
+    notice.value = error instanceof Error ? error.message : '重置失败，工作台记录已保留，请重试。';
+  } finally { busy.value = null; }
+}
 onBeforeUnmount(() => { controller?.abort();apiController?.abort();loadController?.abort();specialBatchController?.abort();specialSession.dispose();autosave.saveNow();autosave.dispose();window.removeEventListener('pagehide',autosave.saveNow);document.removeEventListener('visibilitychange',saveWhenHidden); });
 </script>
 <template>
-  <div class="workbench-shell"><aside class="workbench-sidebar"><a class="brand" href="#" @click.prevent="navigate('center')"><span class="brand-icon"><ShieldCheck :size="27"/></span><div><b>质量测试工作台</b><small>QUALITY WORKBENCH</small></div></a><div class="sidebar-project"><span class="eyebrow">当前测试项目</span><template v-if="taskLocked"><b>暂无进行中任务</b><p>{{ campusProject.name }} · 报告已归档</p></template><template v-else-if="store.receivedAt"><b>{{ campusProject.name }} <span>v{{ campusProject.version }}</span></b><p>{{ campusProject.brand }} · {{ currentTaskProgress?.label }}</p></template><template v-else><b>等待接收项目</b><p>接收交付后显示项目信息</p></template></div><nav aria-label="测试工作台导航"><button v-for="item in tabs" :key="item.id" :disabled="!!busy || item.id !== 'center' && !store.receivedAt" :class="{active:tab===item.id}" :aria-current="tab===item.id ? 'page' : undefined" @click="navigate(item.id)"><component :is="item.icon" :size="18"/><span>{{ item.label }}</span><i v-if="item.id==='center' && store.receivedAt && !taskLocked">1</i><small v-else-if="item.id!=='center'">{{ status(item.id) }}</small></button></nav><div class="sidebar-footer"><button class="avatar" aria-label="立即重置工作台" :disabled="anyRunning" @click="reset">测</button><div><b>测试工程师</b><small>进度自动保存 · 刷新不清空</small></div></div></aside>
+  <div class="workbench-shell"><aside class="workbench-sidebar"><a class="brand" href="#" @click.prevent="navigate('center')"><span class="brand-icon"><ShieldCheck :size="27"/></span><div><b>质量测试工作台</b><small>QUALITY WORKBENCH</small></div></a><div class="sidebar-project"><span class="eyebrow">当前测试项目</span><template v-if="taskLocked"><b>暂无进行中任务</b><p>{{ campusProject.name }} · 报告已归档</p></template><template v-else-if="store.receivedAt"><b>{{ campusProject.name }} <span>v{{ campusProject.version }}</span></b><p>{{ campusProject.brand }} · {{ currentTaskProgress?.label }}</p></template><template v-else><b>等待接收项目</b><p>接收交付后显示项目信息</p></template></div><nav aria-label="测试工作台导航"><button v-for="item in tabs" :key="item.id" :disabled="!!busy || item.id !== 'center' && !store.receivedAt" :class="{active:tab===item.id}" :aria-current="tab===item.id ? 'page' : undefined" @click="navigate(item.id)"><component :is="item.icon" :size="18"/><span>{{ item.label }}</span><i v-if="item.id==='center' && store.receivedAt && !taskLocked">1</i><small v-else-if="item.id!=='center'">{{ status(item.id) }}</small></button></nav><div class="sidebar-footer"><button class="avatar" aria-label="立即重置工作台" title="重置工作台与智慧校园，清除所有测试更改并恢复预置历史" :disabled="anyRunning" @click="reset">测</button><div><b>测试工程师</b><small>进度自动保存 · 刷新不清空</small></div></div></aside>
     <div class="workbench-main"><header class="workbench-header"><div class="breadcrumb">工作台<ChevronRight :size="14"/><b>{{ tabs.find(item=>item.id===tab)?.label }}</b></div><TestWorkflowGuide v-if="store.receivedAt && !taskLocked && tab!=='center' && tab!=='reports'" :store="store" :sections="currentTaskProgress?.sections" :current="tab" :busy="!!busy" :running="executionRunning" @navigate="navigate" @next="nextTest"/><div class="header-actions"><button v-if="taskLocked && tab!=='center'" class="text-button archive-navigation" :disabled="!!busy" @click="archiveView?navigate('center'):openTaskReport()">{{archiveView?'返回任务中心':'查看已归档报告'}}</button><EnvironmentStatus v-if="store.receivedAt"/></div></header>
       <main :class="{'ui-review-main':tab==='ui','api-review-main':tab==='api'}"><div v-if="notice" class="notice" role="status"><CheckCircle2 :size="17"/>{{ notice }}<button aria-label="关闭提示" @click="notice=''">×</button></div>
         <TaskCenter v-if="tab==='center'" :store="store" :busy="!!busy" :running="executionRunning" @receive="receive" @enter="navigate('overview')" @report="openTaskReport"/>
@@ -250,7 +262,7 @@ onBeforeUnmount(() => { controller?.abort();apiController?.abort();loadControlle
     <SpecialGenerationDialog v-if="busy==='生成专项测试用例'" :stage="specialGenerationStage" :assembled="specialAssembled" @cancel="stop"/>
     <ModalFrame v-if="busy==='解析交付API材料' || busy==='生成API测试用例' || busy==='提交验收反馈' || busy==='提交任务报告'" :title="busy" @close="stop"><div class="process-panel"><LoaderCircle class="spinning" :size="35"/><h3>{{ busy }}</h3><ol class="processing-steps"><li v-for="(label,index) in processingSteps" :key="label" :class="{done:index<processingDone}"><CheckCircle2 :size="16"/>{{label}}</li></ol><button class="secondary" @click="stop">取消本次操作</button></div></ModalFrame>
     <ModalFrame v-if="busy==='正在接收项目交付'" title="接收项目交付" @close="controller?.abort()"><div class="process-panel"><LoaderCircle class="spinning" :size="35"/><h3>正在读取项目交付包</h3><p>识别项目名称与版本，读取交付材料。</p></div></ModalFrame>
-    <ModalFrame v-if="resetOpen" title="重置讲解流程" @close="resetOpen=false"><div class="environment-body"><p>将清除本工作台的消息、任务草稿、检查与报告记录。</p><p>不会修改校园项目文件或校园预约/请假数据。请先导出需要保留的报告。</p></div><div class="dialog-footer"><button class="secondary" @click="resetOpen=false">保留当前记录</button><button class="primary" :disabled="!!busy" @click="reset">确认重置</button></div></ModalFrame>
+    <ModalFrame v-if="resetOpen" title="重置讲解流程" @close="resetOpen=false"><div class="environment-body"><p>将清除本工作台的消息、任务草稿、检查与报告记录。</p><p>同时清除智慧校园测试新增的预约、请假及审批记录，各端恢复预置历史，所有测试更改将丢失。请先导出需要保留的报告。</p></div><div class="dialog-footer"><button class="secondary" @click="resetOpen=false">保留当前记录</button><button class="primary" :disabled="!!busy" @click="reset">确认重置</button></div></ModalFrame>
   </div>
 </template>
 <style scoped>

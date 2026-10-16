@@ -78,6 +78,14 @@ function verifyTeacher(reviewer, record) {
 export function createBookingServer({ dataFile = defaultDataFile, leaveFile = join(dirname(dataFile), "leave-requests.json") } = {}) {
   let records = load(dataFile);
   let leaves = load(leaveFile);
+  // A service restart also invalidates stale in-memory demo pages.
+  let revision = randomUUID();
+  async function currentBody(req) {
+    const startedAt = revision;
+    const input = await bodyOf(req);
+    if (startedAt !== revision) fail(409, "校园演示已重置，请刷新后重新操作");
+    return input;
+  }
   return createServer(async (req, res) => {
     const origin = req.headers.origin;
     if (origin && /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin)) {
@@ -90,6 +98,23 @@ export function createBookingServer({ dataFile = defaultDataFile, leaveFile = jo
     const url = new URL(req.url || "/", "http://localhost");
     try {
       if (req.method === "GET" && url.pathname === "/health") return send(res, 200, { ok: true });
+      if (req.method === "GET" && url.pathname === "/api/demo/revision") {
+        res.setHeader("Cache-Control", "no-store");
+        return send(res, 200, { revision });
+      }
+      if (req.method === "POST" && url.pathname === "/api/demo/reset") {
+        // Demo-only operation: local callers, JSON and explicit intent.
+        const local = ["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(req.socket.remoteAddress);
+        if (!local || (origin && !/^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin))) fail(403, "仅允许本机演示环境重置");
+        if (!req.headers["content-type"]?.startsWith("application/json")) fail(415, "重置请求必须使用 JSON");
+        const input = await currentBody(req);
+        if (input.confirm !== "reset-campus-demo") fail(400, "缺少校园演示重置确认");
+        // Restore the previous files if either write fails; never report partial success.
+        try { save(dataFile, []); save(leaveFile, []); }
+        catch (error) { save(dataFile, records); save(leaveFile, leaves); throw error; }
+        records = []; leaves = []; revision = randomUUID();
+        return send(res, 200, { reset: true, revision });
+      }
       if (req.method === "GET" && url.pathname === "/api/bookings/availability") {
         const venue = bookableVenue(url.searchParams.get("facilityId"));
         const date = url.searchParams.get("date") || "";
@@ -107,7 +132,7 @@ export function createBookingServer({ dataFile = defaultDataFile, leaveFile = jo
         return send(res, 200, sortNewest(records.filter((item) => (!owner || item.owner === owner) && (!teacher || classOf(item) === demoClass.id)).map((item) => ({ ...item, classId: classOf(item) }))));
       }
       if (req.method === "POST" && url.pathname === "/api/bookings") {
-        const input = await bodyOf(req);
+        const input = await currentBody(req);
         const venue = bookableVenue(input.facilityId);
         if (!venue) fail(400, "请选择可预约的教室");
         const owner = cleanText(input.owner, 30);
@@ -141,7 +166,7 @@ export function createBookingServer({ dataFile = defaultDataFile, leaveFile = jo
         return send(res, 200, sortNewest(leaves.filter((item) => (!owner || item.owner === owner) && (!teacher || classOf(item) === demoClass.id))));
       }
       if (req.method === "POST" && url.pathname === "/api/leaves") {
-        const input = await bodyOf(req);
+        const input = await currentBody(req);
         const owner = cleanText(input.owner, 30);
         const student = verifyStudent(owner);
         const type = cleanText(input.type, 10);
@@ -180,7 +205,7 @@ export function createBookingServer({ dataFile = defaultDataFile, leaveFile = jo
       const bookingMatch = /^\/api\/bookings\/(BR-[0-9a-f-]+)$/.exec(url.pathname);
       const leaveMatch = /^\/api\/leaves\/(LV-[0-9a-f-]+)$/.exec(url.pathname);
       if (req.method === "PATCH" && (bookingMatch || leaveMatch)) {
-        const input = await bodyOf(req);
+        const input = await currentBody(req);
         const isLeave = !!leaveMatch;
         const source = isLeave ? leaves : records;
         const record = source.find((item) => item.id === (bookingMatch || leaveMatch)[1]);

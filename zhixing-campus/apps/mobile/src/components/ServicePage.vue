@@ -6,7 +6,6 @@ import { navigate, home, back, notify } from "../platform";
 import {
   createRecord,
   validateRecord,
-  answerQuestion,
   type Collection,
   type RecordItem,
 } from "@scene/domain";
@@ -33,7 +32,12 @@ function fieldValue(event: unknown): string {
 }
 const props = defineProps<{ page: string; initialCategory?: string }>();
 const recordCategory = ref('booking');
-const recordCategories = [{id:'booking',label:'预约消息'},{id:'leave',label:'请假消息'},{id:'other',label:'其他服务'}];
+const recordCategories = [
+  { id: 'booking', label: '预约消息', icon: 'calendar-days', emptyTitle: '还没有预约记录', emptyCopy: '找到合适的教室，开启下一次讨论。', action: '预约教室', target: 'booking' },
+  { id: 'leave', label: '请假消息', icon: 'file-text', emptyTitle: '还没有请假记录', emptyCopy: '提交请假后，可在这里查看审批进度。', action: '申请请假', target: 'leave' },
+  { id: 'other', label: '其他服务', icon: 'wrench', emptyTitle: '还没有服务记录', emptyCopy: '提交报修后，在这里跟进处理进度。', action: '报修服务', target: 'repair' },
+];
+const activeRecordCategory = computed(() => recordCategories.find(category => category.id === recordCategory.value) || recordCategories[0]);
 watch(()=>props.initialCategory,value=>{recordCategory.value=['booking','leave','other'].includes(value || '') ? value! : 'booking';},{immediate:true});
 function openMessages(category:string) { if(auth()) navigate('records',`category=${category}`); }
 const query = ref("");
@@ -53,7 +57,7 @@ const bookingsLoading = ref(false);
 const submitting = ref(false);
 const cancellingId = ref("");
 async function refreshBookings() {
-  if (!state.identity) return;
+  if (!state.identity || bookingsLoading.value) return;
   bookingsLoading.value = true;
   error.value = "";
   try {
@@ -81,7 +85,7 @@ const titles: Record<string, string> = {
   assistant: "服务助手",
   detail: "服务详情",
   login: "学生登录",
-  records: "审批消息与服务记录",
+  records: "服务记录",
 };
 const title = computed(() => titles[props.page] ?? "服务");
 const detail = computed(() =>
@@ -102,7 +106,8 @@ const records = computed<Array<RecordItem & { bookingId?: string; leaveId?: stri
     title: booking.activity || `${booking.venue}预约`,
     location: booking.venue,
     category: "教室预约",
-    description: `${booking.date} ${booking.time} · ${booking.count}人 · ${booking.purpose}${booking.note ? ` · ${booking.note}` : ''}${booking.phone ? ` · 联系电话 ${booking.phone}` : ''}`,
+    timeRange: `${booking.date} ${booking.time}`,
+    description: `${booking.count}人 · ${booking.purpose}${booking.note ? ` · ${booking.note}` : ''}${booking.phone ? ` · 联系电话 ${booking.phone}` : ''}`,
     status: bookingStatusLabel[booking.status],
     date: booking.date,
     owner: booking.owner,
@@ -131,7 +136,14 @@ const visibleRecords=computed(()=>records.value.filter(item=>categoryOf(item)===
   const time=(value:string|undefined)=>{const n=Date.parse(value || '');return Number.isFinite(n)?n:0;};
   return time(b.updatedAt || b.date)-time(a.updatedAt || a.date) || b.id.localeCompare(a.id);
 }));
-function updatedLabel(value:string) { return new Date(value).toLocaleString('zh-CN',{hour12:false}); }
+const pendingRecordCount = computed(() => records.value.filter(item => ['待审核', '待处理', '处理中', '待到访'].includes(item.status)).length);
+function recordIcon(item: { bookingId?: string; leaveId?: string }) { return recordCategories.find(category => category.id === categoryOf(item))!.icon; }
+function recordStatusTone(status: string) {
+  if (['待审核', '待处理', '处理中', '待到访'].includes(status)) return 'pending';
+  if (['已预约', '已通过', '已完成'].includes(status)) return 'approved';
+  return status === '已拒绝' ? 'rejected' : 'neutral';
+}
+function updatedLabel(value:string) { return new Date(value).toLocaleString('zh-CN',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}); }
 const nav = [
   { page: "home", label: "首页", icon: "house" },
   { page: "services", label: "服务", icon: "map-pin" },
@@ -197,36 +209,9 @@ async function cancelBooking(id: string, kind: "booking" | "leave" = "booking") 
     await refreshBookings();
   } finally { cancellingId.value = ""; }
 }
-const input = ref(""),
-  busy = ref(false);
-const messages = ref([
-  {
-    role: "assistant",
-    text: `你好，我是${scenario.name}服务助手。今天有什么可以帮你？`,
-  },
-]);
-let timer: ReturnType<typeof setInterval> | undefined;
-function ask(question = input.value) {
-  if (busy.value || !question.trim()) return;
-  messages.value.push({ role: "user", text: question });
-  const answer = answerQuestion(question, scenario, state);
-  messages.value.push({ role: "assistant", text: "" });
-  const target = messages.value[messages.value.length - 1];
-  input.value = "";
-  busy.value = true;
-  let i = 0;
-  timer = setInterval(() => {
-    target.text = answer.slice(0, (i += 2));
-    if (i >= answer.length) {
-      clearInterval(timer);
-      busy.value = false;
-    }
-  }, 24);
-}
-onBeforeUnmount(() => clearInterval(timer));
 </script>
 <template>
-  <view class="mobile-root" :style="themeStyle"
+  <view class="mobile-root" :class="{ 'records-page': page === 'records' }" :style="themeStyle"
     ><view class="mobile-header"
       ><button
         role="button"
@@ -235,10 +220,10 @@ onBeforeUnmount(() => clearInterval(timer));
         aria-label="返回"
         @click="back"
       >
-        ‹</button
+        <view v-if="page === 'records'" class="records-back-chevron" aria-hidden="true" /><template v-else>‹</template></button
       ><view
         ><text class="mobile-brand">{{ title }}</text
-        ><text class="mobile-eyebrow">{{ scenario.english }}</text></view
+        ><text class="mobile-eyebrow">{{ page === 'records' ? '预约 · 请假 · 校园服务' : scenario.english }}</text></view
       ><view class="weather" v-if="page === 'home'">晴 · 24°</view></view
     >
     <view class="mobile-content">
@@ -444,40 +429,59 @@ onBeforeUnmount(() => clearInterval(timer));
           ></view
         ></template
       >
-      <template v-else-if="page === 'records'"
-        ><view class="page-intro"
-          ><text class="page-title">每份申请，都有回应。</text
-          ><text class="body-copy">预约、请假分别查看，最新审批和状态变化排在前面。</text></view
-        ><view class="record-category-tabs" role="tablist" aria-label="消息分类"><button v-for="category in recordCategories" :key="category.id" role="button" :aria-pressed="recordCategory===category.id" :class="{active:recordCategory===category.id}" @click="recordCategory=category.id">{{category.label}}<text>{{records.filter(item=>categoryOf(item)===category.id).length}}</text></button></view
-        ><view class="record-sort-note">按最近更新时间排序 · 最新在前</view
-        ><button role="button" class="secondary-button" :disabled="bookingsLoading" @click="refreshBookings">{{ bookingsLoading ? "正在刷新…" : "刷新审批消息" }}</button
-        ><text v-if="error" class="form-error" role="alert">{{ error }}</text
-        ><view v-if="!visibleRecords.length && !bookingsLoading && !error" class="empty-state"
-          ><text>暂无{{recordCategories.find(c=>c.id===recordCategory)?.label}}</text
-          ><button
-            role="button"
-            class="secondary-button"
-            @click="navigate(recordCategory==='leave'?'leave':recordCategory==='other'?'repair':'booking')"
-          >
-            {{recordCategory==='leave'?'申请请假':recordCategory==='other'?'报修服务':'预约教室'}}
-          </button></view
-        ><view v-for="item in visibleRecords" :key="item.id" class="notice-card service-record">
-          <text class="status-pill" :class="{ warning: item.status === '待审核', rejected: item.status === '已拒绝' }">{{ item.status }}</text>
-          <text class="record-title">{{ item.title }}</text>
-          <text v-if="item.updatedAt" class="record-updated">最近更新 {{ updatedLabel(item.updatedAt) }}</text>
-          <text class="record-meta">{{ item.timeRange || `${item.location} · ${item.date}` }}</text>
+      <template v-else-if="page === 'records'">
+        <view class="records-overview">
+          <view class="records-overview-heading">
+            <view><text class="records-heading">我的申请</text><text class="records-subtitle">办理进度与审批反馈，都在这里。</text></view>
+            <view class="records-overview-icon" aria-hidden="true"><Icon name="clipboard-list" active :size="26" /></view>
+          </view>
+          <view class="records-summary"><text class="records-summary-dot" /><text>办理中 <text class="records-summary-count">{{ pendingRecordCount }}</text></text><text class="records-summary-divider" /><text>累计申请 <text class="records-summary-count">{{ records.length }}</text></text></view>
+        </view>
+        <view class="record-category-tabs" role="group" aria-label="消息分类">
+          <button v-for="category in recordCategories" :key="category.id" role="button" :aria-pressed="recordCategory===category.id" :class="{active:recordCategory===category.id}" @click="recordCategory=category.id">
+            {{ category.label }}<text class="record-tab-count">{{ records.filter(item=>categoryOf(item)===category.id).length }}</text>
+          </button>
+        </view>
+        <view class="records-toolbar">
+          <text class="record-sort-note">最近更新<text class="record-sort-divider">·</text>{{ visibleRecords.length }} 条记录</text>
+          <button role="button" class="records-refresh" aria-label="刷新审批消息" :aria-disabled="bookingsLoading || !state.identity" :disabled="bookingsLoading || !state.identity" @click="refreshBookings">
+            <view :class="{ 'records-spinning': bookingsLoading }" aria-hidden="true"><Icon name="refresh-cw" active :size="15" /></view>{{ bookingsLoading ? '刷新中' : '刷新' }}
+          </button>
+        </view>
+        <view v-if="error" class="records-error" role="alert"><Icon name="circle-alert" :size="19" /><view><text class="records-error-title">暂时无法同步记录</text><text>{{ error }}，请点击上方刷新重试。</text></view></view>
+        <view v-if="bookingsLoading && !visibleRecords.length" class="records-loading" role="status" aria-label="正在加载服务记录">
+          <view v-for="index in 2" :key="index" class="records-skeleton" aria-hidden="true"><view class="skeleton-heading" /><view class="skeleton-line" /><view class="skeleton-line short" /></view>
+          <text class="records-loading-label">正在同步申请进度…</text>
+        </view>
+        <view v-else-if="!visibleRecords.length && !error" class="records-empty">
+          <view class="records-empty-art" aria-hidden="true"><view class="records-empty-orbit" /><view class="records-empty-sheet records-empty-sheet-back" /><view class="records-empty-sheet"><Icon :name="activeRecordCategory.icon" active :size="29" /><view class="records-empty-line" /><view class="records-empty-line short" /></view><view class="records-empty-spark" /></view>
+          <text class="records-empty-title">{{ state.identity ? activeRecordCategory.emptyTitle : '登录后，查看你的申请' }}</text>
+          <text class="records-empty-copy">{{ state.identity ? activeRecordCategory.emptyCopy : '预约、请假与报修进度，为你统一收好。' }}</text>
+          <button role="button" class="records-primary" @click="state.identity ? navigate(activeRecordCategory.target) : navigate('login')">{{ state.identity ? activeRecordCategory.action : '登录查看' }}<text aria-hidden="true">↗</text></button>
+        </view>
+        <view v-for="item in visibleRecords" :key="item.id" class="notice-card service-record">
+          <view class="record-card-heading">
+            <view class="record-kind-icon" :class="categoryOf(item)" aria-hidden="true"><Icon :name="recordIcon(item)" active :size="21" /></view>
+            <view class="record-heading-copy"><text class="record-title">{{ item.title }}</text><text class="record-kind-label">{{ item.bookingId ? item.location : item.category }}</text></view>
+            <text class="status-pill" :class="recordStatusTone(item.status)">{{ item.status }}</text>
+          </view>
+          <view class="record-time"><Icon name="clock-3" :size="15" /><text class="record-meta">{{ item.timeRange || `${item.location} · ${item.date}` }}</text></view>
           <text class="record-description">{{ item.description }}</text>
-          <view v-if="item.reviewer || item.reviewReason" class="record-review">
+          <view v-if="item.reviewer || item.reviewReason" class="record-review" :class="{ 'review-rejected': item.status === '已拒绝' }">
             <text v-if="item.reviewer" class="record-reviewer">审核教师：{{ item.reviewer }}</text>
             <text v-if="item.reviewReason" class="record-review-reason">审核说明：{{ item.reviewReason }}</text>
           </view>
-          <view v-if="(item.bookingId && ['待审核', '已预约'].includes(item.status)) || (item.leaveId && ['待审核', '已通过'].includes(item.status))" class="record-actions">
-            <button role="button" v-if="item.bookingId" class="record-cancel" :disabled="cancellingId === item.bookingId" @click="cancelBooking(item.bookingId)">{{ cancellingId === item.bookingId ? '取消中…' : '取消预约' }}</button>
-            <button role="button" v-if="item.leaveId" class="record-cancel" :disabled="cancellingId === item.leaveId" @click="cancelBooking(item.leaveId, 'leave')">{{ cancellingId === item.leaveId ? '取消中…' : '取消请假' }}</button>
+          <view class="record-footer">
+            <text class="record-updated">{{ item.updatedAt ? updatedLabel(item.updatedAt) + ' 更新' : item.date + ' 提交' }}</text>
+            <view v-if="(item.bookingId && ['待审核', '已预约'].includes(item.status)) || (item.leaveId && ['待审核', '已通过'].includes(item.status))" class="record-actions">
+              <button role="button" v-if="item.bookingId" class="record-cancel" :aria-disabled="!!cancellingId" :disabled="!!cancellingId" @click="cancelBooking(item.bookingId)">{{ cancellingId === item.bookingId ? '取消中…' : '取消预约' }}</button>
+              <button role="button" v-if="item.leaveId" class="record-cancel" :aria-disabled="!!cancellingId" :disabled="!!cancellingId" @click="cancelBooking(item.leaveId, 'leave')">{{ cancellingId === item.leaveId ? '取消中…' : '取消请假' }}</button>
+            </view>
           </view>
-        </view
-        ></template
-      >
+        </view>
+        <view v-if="visibleRecords.length && !bookingsLoading" class="records-list-end">以上为当前分类的全部记录</view>
+        <view class="records-help"><view class="records-help-dot" />申请提交后，审批结果会同步到这里</view>
+      </template>
       <template v-else-if="page === 'detail'"
         ><template v-if="detail"
           ><view class="detail-hero"
@@ -508,42 +512,7 @@ onBeforeUnmount(() => clearInterval(timer));
           </button></view
         ></template
       >
-      <template v-else-if="page === 'assistant'"
-        ><view class="assistant-banner"
-          ><text class="assistant-symbol">✧</text
-          ><text class="page-title">你的日常服务向导。</text
-          ><text class="tiny muted">服务助手 · 演示回答</text></view
-        ><view class="message-list" aria-live="polite"
-          ><view v-for="(m, i) in messages" :key="i" :class="['bubble', m.role]"
-            ><text>{{ m.text || "正在整理回答…" }}</text></view
-          ></view
-        ><view class="suggestions"
-          ><button
-            role="button"
-            v-for="q in scenario.questions"
-            :key="q.question"
-            :disabled="busy"
-            @click="ask(q.question)"
-          >
-            {{ q.question }} ↗
-          </button></view
-        ><view class="chat-composer"
-          ><input
-            v-model="input"
-            class="mobile-input"
-            placeholder="有什么可以帮你？"
-            aria-label="输入问题"
-            confirm-type="send"
-            @confirm="ask()"
-           @blur="input  = fieldValue($event)"/><button
-            role="button"
-            :disabled="busy || !input.trim()"
-            @click="ask()"
-          >
-            发送
-          </button></view
-        ></template
-      > </view
+ </view
     ><view
       v-if="['home', 'services', 'booking', 'me'].includes(page)"
       class="bottom-nav"

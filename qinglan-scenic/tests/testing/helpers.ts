@@ -2,6 +2,8 @@ import { expect, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { campusProject, API_CASE_COUNT } from '../../apps/testing/src/campus-handoff';
 export async function fixtures(page:Page) {
+  // Never let workbench browser tests erase a developer's real campus data.
+  await page.route('**/api/demo/reset', route=>route.fulfill({json:{data:{reset:true,revision:'test-reset'}}}));
   await page.route('**/__campus_environment',route=>route.fulfill({contentType:'application/json',body:JSON.stringify({at:new Date().toISOString(),services:[...campusProject.pages.map(p=>({id:p.id,name:p.name,port:p.port,url:`http://localhost:${p.port}`,state:'ready',detail:'项目身份已核验'})),{id:'booking',name:'预约请假服务',port:5606,url:'http://localhost:5606',state:'ready',detail:'项目身份已核验'}]})}));
   await page.route(/http:\/\/(localhost|127\.0\.0\.1):550[0-4]\//,route=>route.fulfill({contentType:'text/html; charset=utf-8',body:'<!doctype html><html lang="zh-CN"><meta charset="UTF-8"><title>知行校园验收夹具</title><style>body{font:20px system-ui;background:#edf2fa;color:#405b95;padding:25px}</style><h1>知行校园项目</h1><p>用于隔离验证预览入口，不执行真实校园业务。</p><button>服务入口</button></html>'}));
 }

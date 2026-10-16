@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, expect, it } from "vitest";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { scenario } from "../../scenario/config";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Server } from "node:http";
@@ -48,6 +49,68 @@ beforeEach(async () => {
 afterEach(async () => {
   await new Promise<void>((resolve) => server.close(() => resolve()));
   rmSync(directory, { recursive: true, force: true });
+});
+
+it("大重置清除所有测试申请与审批，保留预置历史，重启后同一时段可再次提交", async () => {
+  const seed = JSON.stringify(scenario.seed);
+  const oldRevision = (await call('/api/demo/revision')).payload.data.revision;
+  const booked = await call('/api/bookings', 'POST', booking());
+  const requested = await call('/api/leaves', 'POST', leave());
+  expect(booked.status).toBe(201); expect(requested.status).toBe(201);
+  await call(`/api/bookings/${booked.payload.data.id}`, 'PATCH', { action: 'approve', reviewer: '陈越' });
+  await call(`/api/leaves/${requested.payload.data.id}`, 'PATCH', { action: 'approve', reviewer: '陈越' });
+  expect((await call('/api/leaves', 'POST', leave())).status).toBe(409);
+  const cancelled = await call('/api/leaves', 'POST', leave('陈晨'));
+  await call(`/api/leaves/${cancelled.payload.data.id}`, 'PATCH', { action: 'cancel', owner: '陈晨' });
+  const rejected = await call('/api/leaves', 'POST', leave('顾宁'));
+  await call(`/api/leaves/${rejected.payload.data.id}`, 'PATCH', { action: 'reject', reviewer: '陈越', reason: '补充材料' });
+  const reset = await call('/api/demo/reset', 'POST', { confirm: 'reset-campus-demo' });
+  expect(reset.status).toBe(200);
+  expect(reset.payload.data).toMatchObject({ reset: true });
+  expect(reset.payload.data.revision).not.toBe(oldRevision);
+  expect((await call('/api/demo/revision')).payload.data.revision).toBe(reset.payload.data.revision);
+  expect((await call('/api/bookings')).payload.data).toEqual([]);
+  expect((await call('/api/leaves')).payload.data).toEqual([]);
+  expect(JSON.parse(readFileSync(dataFile, 'utf8'))).toEqual([]);
+  expect(JSON.parse(readFileSync(join(directory, 'leave-requests.json'), 'utf8'))).toEqual([]);
+  expect(JSON.stringify(scenario.seed)).toBe(seed);
+  expect(scenario.seed.bookings.length).toBeGreaterThan(0);
+  await new Promise<void>(resolve => server.close(() => resolve()));
+  await start();
+  expect((await call('/api/bookings')).payload.data).toEqual([]);
+  expect((await call('/api/leaves')).payload.data).toEqual([]);
+  expect((await call('/api/leaves', 'POST', leave())).status).toBe(201);
+  expect((await call('/api/bookings', 'POST', booking())).status).toBe(201);
+  expect((await call('/api/demo/reset', 'POST', { confirm: 'reset-campus-demo' })).status).toBe(200);
+  expect((await call('/api/demo/reset', 'POST', { confirm: 'reset-campus-demo' })).status).toBe(200);
+});
+
+it("重置需要显式确认，拒绝外站请求与非 JSON 表单", async () => {
+  await call('/api/leaves', 'POST', leave());
+  expect((await call('/api/demo/reset', 'POST', {})).status).toBe(400);
+  expect((await call('/api/demo/reset')).status).toBe(404);
+  const external = await fetch(base + '/api/demo/reset', { method: 'POST', headers: { Origin: 'https://untrusted.example', 'Content-Type': 'application/json' }, body: JSON.stringify({ confirm: 'reset-campus-demo' }) });
+  expect(external.status).toBe(403);
+  const form = await fetch(base + '/api/demo/reset', { method: 'POST', body: JSON.stringify({ confirm: 'reset-campus-demo' }) });
+  expect(form.status).toBe(415);
+  expect((await call('/api/leaves')).payload.data).toHaveLength(1);
+});
+
+it("重置写盘失败不会发布新版本或清空内存，已写文件会回滚", async () => {
+  await call('/api/bookings', 'POST', booking());
+  await call('/api/leaves', 'POST', leave());
+  const oldRevision = (await call('/api/demo/revision')).payload.data.revision;
+  const leaveFile = join(directory, 'leave-requests.json');
+  renameSync(leaveFile, leaveFile + '.backup');
+  mkdirSync(leaveFile); // Force the second rename to fail without changing permissions.
+  expect((await call('/api/demo/reset', 'POST', { confirm: 'reset-campus-demo' })).status).toBe(500);
+  expect((await call('/api/demo/revision')).payload.data.revision).toBe(oldRevision);
+  expect((await call('/api/bookings')).payload.data).toHaveLength(1);
+  expect((await call('/api/leaves')).payload.data).toHaveLength(1);
+  expect(JSON.parse(readFileSync(dataFile, 'utf8'))).toHaveLength(1);
+  rmSync(leaveFile, { recursive: true });
+  renameSync(leaveFile + '.backup', leaveFile);
+  expect((await call('/api/demo/reset', 'POST', { confirm: 'reset-campus-demo' })).status).toBe(200);
 });
 
 it("校验完整预约、可用性、班级审核、占用冲突、取消与重启持久化", async () => {

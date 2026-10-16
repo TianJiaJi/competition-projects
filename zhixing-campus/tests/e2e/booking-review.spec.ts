@@ -45,6 +45,41 @@ async function teacherLogin(page: Page) {
   await page.getByRole("button", { name: "进入工作台" }).click();
 }
 
+test("全局重置自动刷新学生教师后台，清除申请与内存修改并恢复预置历史", async ({ browser }) => {
+  const student = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  const teacher = await browser.newPage();
+  const admin = await browser.newPage();
+  try {
+    await studentLogin(student);
+    await studentBooking(student, '重置前预约记录');
+    await teacherLogin(teacher);
+    await isolate(admin);
+    await admin.goto(`${adminUrl}/#/notices`);
+    await admin.getByRole('button', { name: '进入工作台' }).click();
+    await admin.getByRole('button', { name: '新增', exact: true }).click();
+    await admin.getByLabel('名称', { exact: true }).fill('重置前新增公告');
+    await admin.getByLabel('位置', { exact: true }).fill('服务中心');
+    await admin.getByLabel('详细说明', { exact: true }).fill('大重置应清除此内存更改');
+    await admin.getByRole('button', { name: '保存', exact: true }).click();
+    await expect(admin.getByText('重置前新增公告', { exact: true })).toBeVisible();
+    // Ensure every terminal has an established baseline before resetting.
+    await Promise.all([student, teacher, admin].map(page => page.waitForResponse('**/api/demo/revision')));
+    const reloaded = Promise.all([student, teacher, admin].map(page => page.waitForEvent('load')));
+    const response = await fetch(isolatedUrl + '/api/demo/reset', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ confirm: 'reset-campus-demo' }) });
+    expect(response.status).toBe(200);
+    await reloaded;
+    await expect(teacher.getByRole('button', { name: '进入工作台' })).toBeVisible();
+    await expect(admin.getByRole('button', { name: '进入工作台' })).toBeVisible();
+    await admin.getByRole('button', { name: '进入工作台' }).click();
+    await expect(admin.getByText('重置前新增公告', { exact: true })).toHaveCount(0);
+    await expect(admin.getByText(scenario.seed.notices[0].title, { exact: true })).toBeVisible();
+    expect(await (await fetch(isolatedUrl + '/api/bookings')).json()).toEqual({ data: [] });
+    // Re-enter the same booking slot: the old application no longer blocks it.
+    await studentLogin(student);
+    await studentBooking(student, '重置后再次预约');
+  } finally { await student.close(); await teacher.close(); await admin.close(); }
+});
+
 test("学生完整预约 → 教师终审 → 学生查看/取消，管理员只读", async ({ browser }) => {
   const student = await browser.newPage({ viewport: { width: 390, height: 844 } });
   const teacher = await browser.newPage({ viewport: { width: 1366, height: 768 } });

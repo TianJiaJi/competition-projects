@@ -1,5 +1,15 @@
 <script lang="ts">
-export default { onLaunch() {} };
+import { watchDemoReset } from "@scene/bookings";
+export default {
+  onLaunch() {
+    // #ifdef H5
+    watchDemoReset(() => {
+      uni.removeStorageSync("zhixing:student-session");
+      window.location.reload();
+    }, import.meta.env.VITE_BOOKING_API_URL);
+    // #endif
+  },
+};
 </script>
 <style>
 @import "./style.css";

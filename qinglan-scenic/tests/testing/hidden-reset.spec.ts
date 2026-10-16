@@ -5,7 +5,10 @@ test('左下角测头像保留外观，点击直接清空且不弹确认',async(
   await receive(page);await generateApi(page);
   const reset=page.locator('.sidebar-footer').getByRole('button',{name:'立即重置工作台',exact:true});
   await expect(reset).toHaveText('测');await expect(reset).toHaveClass('avatar');
+  const request=page.waitForRequest('**/api/demo/reset');
   await reset.click();
+  expect((await request).postDataJSON()).toEqual({confirm:'reset-campus-demo'});
+  await expect(page.getByRole('status')).toContainText('工作台与智慧校园已重置');
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.locator('.delivery-task-card,.api-table,.acceptance-cover')).toHaveCount(0);
   await expect(page.locator('.task-metrics')).toContainText('等待接收');
@@ -15,6 +18,40 @@ test('左下角测头像保留外观，点击直接清空且不弹确认',async(
   await expect(page.locator('.delivery-task-card')).toHaveCount(1);
   await nav(page,'API测试');
   await expect(page.getByRole('button',{name:'解析API材料',exact:true})).toBeEnabled();
+});
+test('校园服务失败时保留工作台进度，成功重试后才清空',async({page})=>{
+  await receive(page);
+  await page.route('**/api/demo/reset',route=>route.fulfill({status:500,json:{error:'数据写入失败'}}));
+  await page.getByRole('button',{name:'立即重置工作台',exact:true}).click();
+  await expect(page.getByRole('status')).toContainText('校园重置未完成，工作台记录已保留');
+  await expect(page.locator('.sidebar-project')).toContainText('智慧校园');
+  await page.reload();
+  await expect(page.locator('.delivery-task-card')).toHaveCount(1);
+  await page.route('**/api/demo/reset',route=>route.fulfill({json:{data:{reset:true,revision:'retry-ok'}}}));
+  await page.getByRole('button',{name:'立即重置工作台',exact:true}).click();
+  await expect(page.locator('.task-metrics')).toContainText('等待接收');
+});
+test('校园服务断连不会清空工作台',async({page})=>{
+  await receive(page);
+  await page.route('**/api/demo/reset',route=>route.abort());
+  await page.getByRole('button',{name:'立即重置工作台',exact:true}).click();
+  await expect(page.getByRole('status')).toContainText('无法确认校园重置结果');
+  await page.reload();
+  await expect(page.locator('.delivery-task-card')).toHaveCount(1);
+});
+test('等待校园重置时锁定入口，防止重复发送',async({page})=>{
+  await receive(page);
+  let finish!:()=>void;
+  const hold=new Promise<void>(resolve=>{finish=resolve;});
+  let count=0;
+  await page.route('**/api/demo/reset',async route=>{count++;await hold;await route.fulfill({json:{data:{reset:true,revision:'slow-ok'}}});});
+  const reset=page.getByRole('button',{name:'立即重置工作台',exact:true});
+  await reset.click();
+  await expect(reset).toBeDisabled();
+  await expect(page.getByRole('status')).toContainText('正在清理校园测试数据');
+  finish();
+  await expect(page.locator('.task-metrics')).toContainText('等待接收');
+  expect(count).toBe(1);
 });
 test('运行操作时头像重置入口禁用，取消后可通过键盘直接重置',async({page})=>{
   await receive(page);await nav(page,'API测试');

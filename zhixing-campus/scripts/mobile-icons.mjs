@@ -21,6 +21,12 @@ for (const name of [
   "user-plus",
   "sparkles",
   "building-2",
+  "clipboard-list",
+  "file-text",
+  "chevron-left",
+  "refresh-cw",
+  "clock-3",
+  "circle-alert",
 ]) {
   const source = await readFile(
     path.join(root, "icons", name + ".svg"),
@@ -33,7 +39,9 @@ for (const name of [
     const svg = source.replaceAll("currentColor", color);
     await writeFile(
       path.join(output, name + suffix + ".png"),
-      new Resvg(svg, { fitTo: { mode: "width", value: 72 } }).render().asPng(),
+      // Lucide icons contain no text; scanning Windows system fonts for every
+      // image is unnecessary and can delay the new assets for several minutes.
+      new Resvg(svg, { font: { loadSystemFonts: false }, fitTo: { mode: "width", value: 72 } }).render().asPng(),
     );
   }
 }
