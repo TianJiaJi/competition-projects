@@ -10,6 +10,7 @@ const props = withDefaults(
     kind?: "latency" | "load";
     duration?: number;
     concurrency?: number;
+    loadMax?: number;
     rps?: number;
     latencyMax?: number;
     events?: LoadEvent[];
@@ -42,7 +43,7 @@ const horizon = computed(
   () => props.duration || Math.max(24, ...props.frames.map((f) => f.second)),
 );
 const leftAxis = computed(() => props.kind === 'load'
-  ? chartAxis(Math.max(props.concurrency || LOAD_DEFAULTS.concurrency, ...props.frames.map(frame => frame.concurrency)), true)
+  ? chartAxis(Math.max(props.loadMax || 0, props.concurrency || LOAD_DEFAULTS.concurrency, ...props.frames.map(frame => frame.concurrency)), true)
   : chartAxis(Math.max(props.latencyMax || 120, ...props.frames.map(frame => frame.p95))));
 const rightAxis = computed(() => chartAxis(Math.max(120, props.rps || 0, ...props.frames.map(frame => frame.rps))));
 const leftMax = computed(() => leftAxis.value.max), rightMax = computed(() => rightAxis.value.max);
@@ -90,7 +91,7 @@ const last = computed(() => props.frames.at(-1));
       <text v-if="kind === 'load'" class="axis-unit axis-amber" :x="width - rightInset + 10" y="12">req/s</text>
       <g v-if="kind==='load' && showTarget && concurrency" class="goal-target-line">
         <line :x1="leftInset" :x2="width-rightInset" :y1="y(concurrency)" :y2="y(concurrency)" stroke="#a7813f" stroke-dasharray="5 5"/>
-        <text :x="width-rightInset-4" :y="y(concurrency)+12" text-anchor="end" class="axis-tick axis-amber">目标 {{formatAxisTick(concurrency)}}</text>
+        <text :x="width-rightInset-4" :y="y(concurrency)+12" text-anchor="end" class="axis-tick axis-amber">预期 {{formatAxisTick(concurrency)}}</text>
       </g>
       <polygon
         v-if="frames.length"

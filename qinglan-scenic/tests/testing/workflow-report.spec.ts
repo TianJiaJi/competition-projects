@@ -13,7 +13,7 @@ test('默认参数、推荐导航顺序及开始测试入口',async({page})=>{
  const navigation=await page.getByRole('navigation',{name:'测试工作台导航'}).innerText();
  expect(navigation.indexOf('并发测试')).toBeLessThan(navigation.indexOf('专项测试'));
  await nav(page,'并发测试');
- await expect(page.getByLabel('目标并发',{exact:true})).toHaveValue('2000');
+ await expect(page.getByLabel('预期并发目标',{exact:true})).toHaveValue('1000');
  await expect(page.getByLabel('持续时长',{exact:true})).toHaveValue('30');
  await expect(page.getByRole('button',{name:'开始并发测试',exact:true})).toBeDisabled();
  await noOverflow(page);
@@ -50,7 +50,7 @@ test('API结束后手动打开报告、刷新恢复、从记录重开并前往�
  await expect(completedApi).toHaveCSS('background-color','rgb(220, 238, 221)');
  await expect(completedApi).toHaveCSS('border-top-color','rgb(184, 213, 187)');
  await expect(page.getByRole('group',{name:'测试阶段切换'}).getByRole('button',{name:/^并发测试/})).not.toHaveClass(/done/);
- await expect(page.getByLabel('目标并发',{exact:true})).toHaveValue('2000');
+ await expect(page.getByLabel('预期并发目标',{exact:true})).toHaveValue('1000');
  await expect(page.getByRole('button',{name:'开始并发测试',exact:true})).toBeEnabled();
  await nav(page,'验收报告');await page.getByRole('button',{name:'查看报告',exact:true}).click();
  await expect(dialog).toBeVisible();
@@ -77,6 +77,14 @@ test('提交后无重复完成提示，归档入口保留在顶栏且不恢复�
  await page.getByRole('button',{name:'提交报告并完结任务',exact:true}).click();
  const confirmation=page.getByRole('dialog',{name:'提交报告并完结任务',exact:true});
  await confirmation.getByRole('checkbox').check();await confirmation.getByRole('button',{name:'确认提交并完结',exact:true}).click();
+ await expect(page.getByRole('button',{name:'查看验收报告',exact:true})).toBeVisible();
+ await expect(page.locator('.inbox-panel .badge')).toHaveText('0');
+ await expect(page.locator('.inbox-panel')).toContainText('暂无待处理交付消息');
+ await expect(page.locator('.inbox-panel .message-author')).toHaveCount(0);
+ await expect(page.locator('.inbox-panel').getByRole('button',{name:'查看交付材料',exact:true})).toHaveCount(0);
+ await page.reload();
+ await expect(page.locator('.inbox-panel .badge')).toHaveText('0');
+ await expect(page.locator('.inbox-panel')).toContainText('暂无待处理交付消息');
  await expect(page.getByRole('button',{name:'查看验收报告',exact:true})).toBeVisible();
  await expect(page.locator('main > .notice')).toHaveCount(0);
  await nav(page,'UI测试');

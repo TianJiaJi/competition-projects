@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, nextTick } from "vue";
-defineProps<{ title: string; description?: string }>();
+const props = withDefaults(defineProps<{ title: string; description?: string; closeLabel?: string; locked?: boolean }>(), { closeLabel: '关闭选择', locked: false });
 const emit = defineEmits<{ close: [] }>();
+function close() { if (!props.locked) emit('close'); }
 // #ifdef H5
 let previous: HTMLElement | null = null;
 let oldOverflow = "";
 let host: HTMLElement | null = null;
 function keydown(event: KeyboardEvent) {
-  if (event.key === "Escape") { event.preventDefault(); emit("close"); }
+  if (event.key === "Escape") { event.preventDefault(); close(); }
   if (event.key !== "Tab" || !host) return;
-  const focusable = Array.from(host.querySelectorAll<HTMLElement>('button:not(:disabled),uni-button:not([disabled]),input,[tabindex="0"]'));
+  const focusable = Array.from(host.querySelectorAll<HTMLElement>('button,uni-button,input,[tabindex="0"]')).filter(element => !element.hasAttribute('disabled') && element.getAttribute('aria-disabled') !== 'true');
+  if (!focusable.length) { event.preventDefault(); return; }
   const first = focusable[0], last = focusable.at(-1);
   if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
   else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
@@ -31,9 +33,9 @@ onBeforeUnmount(() => {
 // #endif
 </script>
 <template>
-  <view class="campus-sheet-mask" @click.self="emit('close')">
+  <view class="campus-sheet-mask" @click.self="close">
     <view class="campus-sheet" role="dialog" aria-modal="true" :aria-label="title">
-      <view class="sheet-heading"><view><text class="sheet-title">{{ title }}</text><text v-if="description" class="sheet-description">{{ description }}</text></view><button role="button" class="sheet-close" aria-label="关闭选择" @click="emit('close')">×</button></view>
+      <view class="sheet-heading"><view><text class="sheet-title">{{ title }}</text><text v-if="description" class="sheet-description">{{ description }}</text></view><button role="button" class="sheet-close" :aria-label="closeLabel" :disabled="locked" :aria-disabled="locked" @click="close">×</button></view>
       <view class="sheet-body"><slot /></view>
       <view v-if="$slots.footer" class="sheet-footer"><slot name="footer" /></view>
     </view>

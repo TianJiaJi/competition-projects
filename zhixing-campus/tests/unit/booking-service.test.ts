@@ -113,6 +113,98 @@ it("重置写盘失败不会发布新版本或清空内存，已写文件会回�
   expect((await call('/api/demo/reset', 'POST', { confirm: 'reset-campus-demo' })).status).toBe(200);
 });
 
+it("本人查看完整假条，撤回修改后重新审核，拦截旧版本审批且保留流程记录", async () => {
+  const original = (await call('/api/leaves', 'POST', leave())).payload.data;
+  const path = `/api/leaves/${original.id}`;
+  expect((await call(path)).status).toBe(403);
+  expect((await call(path + '?owner=' + encodeURIComponent('陈晨'))).status).toBe(403);
+  expect((await call(path + '?owner=' + encodeURIComponent('林悦'))).payload.data).toMatchObject({ emergencyName: '林女士', revision: 1, history: [{ action: 'submitted', actor: '林悦' }] });
+  expect((await call(path, 'PATCH', { action: 'withdraw', owner: '陈晨', expectedRevision: 1 })).status).toBe(403);
+  expect((await call(path, 'PATCH', { action: 'resubmit', ...leave(), expectedRevision: 1 })).status).toBe(409);
+  expect((await call(path, 'PATCH', { action: 'withdraw', owner: '林悦' })).status).toBe(400);
+  const withdrawn = await call(path, 'PATCH', { action: 'withdraw', owner: '林悦', expectedRevision: 1 });
+  expect(withdrawn.payload.data).toMatchObject({ status: 'withdrawn', revision: 2, reason: original.reason });
+  expect((await call(path, 'PATCH', { action: 'approve', reviewer: '陈越', expectedRevision: 1 })).status).toBe(409);
+  expect((await call(path, 'PATCH', { action: 'approve', reviewer: '陈越', expectedRevision: 2 })).status).toBe(409);
+  expect((await call(path, 'PATCH', { action: 'resubmit', ...leave(), confirmed: false, expectedRevision: 2 })).status).toBe(400);
+  const updated = await call(path, 'PATCH', { ...leave(), action: 'resubmit', reason: '修改后的医院复查申请', leavingCity: true,
+    status: 'approved', revision: 999, history: [], expectedRevision: 2 });
+  expect(updated.status).toBe(200);
+  expect(updated.payload.data).toMatchObject({ id: original.id, createdAt: original.createdAt, status: 'pending', revision: 3, reason: '修改后的医院复查申请', leavingCity: true });
+  expect(updated.payload.data.history.map((event: { action: string }) => event.action)).toEqual(['submitted', 'withdrawn', 'resubmitted']);
+  expect((await call('/api/leaves')).payload.data).toHaveLength(1);
+  expect((await call(path, 'PATCH', { action: 'resubmit', ...leave(), expectedRevision: 2 })).status).toBe(409);
+  expect((await call(path, 'PATCH', { action: 'approve', reviewer: '陈越', expectedRevision: 1 })).status).toBe(409);
+  const approved = await call(path, 'PATCH', { action: 'approve', reviewer: '陈越', expectedRevision: 3 });
+  expect(approved.payload.data).toMatchObject({ status: 'approved', revision: 4 });
+  expect((await call(path, 'PATCH', { action: 'withdraw', owner: '林悦', expectedRevision: 4 })).status).toBe(409);
+  expect((await call(path, 'PATCH', { action: 'cancel', owner: '林悦', expectedRevision: 4 })).payload.data.status).toBe('cancelled');
+  expect((await call(path, 'PATCH', { action: 'resubmit', ...leave(), expectedRevision: 5 })).status).toBe(409);
+  await new Promise<void>(resolve => server.close(() => resolve())); await start();
+  const saved = (await call(path + '?owner=' + encodeURIComponent('林悦'))).payload.data;
+  expect(saved.history.map((event: { action: string }) => event.action)).toEqual(['submitted', 'withdrawn', 'resubmitted', 'approved', 'cancelled']);
+  expect(saved.reason).toBe('修改后的医院复查申请');
+});
+
+it("撤回释放冲突区间，但重提仍检查其他有效假条；撤回状态可取消", async () => {
+  const original = (await call('/api/leaves', 'POST', leave())).payload.data;
+  const path = `/api/leaves/${original.id}`;
+  await call(path, 'PATCH', { action: 'withdraw', owner: '林悦', expectedRevision: 1 });
+  const second = await call('/api/leaves', 'POST', leave());
+  expect(second.status).toBe(201);
+  expect((await call(path, 'PATCH', { action: 'resubmit', ...leave(), expectedRevision: 2 })).status).toBe(409);
+  expect((await call(path + '?owner=' + encodeURIComponent('林悦'))).payload.data.status).toBe('withdrawn');
+  expect((await call(path, 'PATCH', { action: 'cancel', owner: '林悦', expectedRevision: 2 })).payload.data.status).toBe('cancelled');
+});
+
+it("兼容旧假条，被拒绝后修改重提清除旧审核结果，但保留拒绝历史", async () => {
+  await new Promise<void>(resolve => server.close(() => resolve()));
+  const old = { ...leave(), id: 'LV-aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', classId: demoClass.id,
+    status: 'rejected', reviewer: '陈越', reviewReason: '请补充医院地址', createdAt: '2026-01-01T08:00:00Z', updatedAt: '2026-01-01T09:00:00Z' };
+  writeFileSync(join(directory, 'leave-requests.json'), JSON.stringify([old])); await start();
+  const path = `/api/leaves/${old.id}`;
+  expect((await call(path, 'PATCH', { action: 'withdraw', owner: '林悦', expectedRevision: 0 })).payload.data.status).toBe('withdrawn');
+  const updated = (await call(path, 'PATCH', { action: 'resubmit', ...leave(), address: '市第一人民医院门诊部', expectedRevision: 1 })).payload.data;
+  expect(updated.status).toBe('pending');
+  expect(updated.reviewer).toBeUndefined(); expect(updated.reviewReason).toBeUndefined();
+  expect(updated.history[1]).toMatchObject({ action: 'rejected', reason: '请补充医院地址', actor: '陈越', at: old.updatedAt });
+});
+
+it("假条核销是区别于取消的完结终态，仅本人确认已通过假条后可操作", async () => {
+  const original = (await call('/api/leaves', 'POST', leave())).payload.data;
+  const path = `/api/leaves/${original.id}`;
+  const complete = { action: 'complete', owner: '林悦', confirmedReturn: true, expectedRevision: 1 };
+  expect((await call(path, 'PATCH', complete)).status).toBe(409);
+  await call(path, 'PATCH', { action: 'approve', reviewer: '陈越', expectedRevision: 1 });
+  expect((await call(path, 'PATCH', { ...complete, owner: '陈晨', expectedRevision: 2 })).status).toBe(403);
+  expect((await call(path, 'PATCH', { ...complete, confirmedReturn: false, expectedRevision: 2 })).status).toBe(400);
+  expect((await call(path, 'PATCH', { ...complete, expectedRevision: undefined })).status).toBe(400);
+  expect((await call(path, 'PATCH', complete)).status).toBe(409);
+  const result = await call(path, 'PATCH', { ...complete, expectedRevision: 2, completedBy: '其他人', completedAt: '1900-01-01' });
+  expect(result.status).toBe(200);
+  expect(result.payload.data).toMatchObject({ status: 'completed', revision: 3, completedBy: '林悦', reviewer: '陈越', reason: original.reason });
+  expect(result.payload.data.completedAt).toBe(result.payload.data.updatedAt);
+  expect(result.payload.data.completedAt).not.toBe('1900-01-01');
+  expect(result.payload.data.history.map((event: { action: string }) => event.action)).toEqual(['submitted', 'approved', 'completed']);
+  for (const action of ['complete', 'withdraw', 'cancel', 'resubmit', 'approve']) {
+    expect((await call(path, 'PATCH', { ...leave(), action, reviewer: '陈越', confirmedReturn: true, expectedRevision: 3 })).status).toBe(409);
+  }
+  // Completed leave no longer reserves the interval; the record itself is retained.
+  expect((await call('/api/leaves', 'POST', leave())).status).toBe(201);
+  await new Promise<void>(resolve => server.close(() => resolve())); await start();
+  const saved = (await call(path + '?owner=' + encodeURIComponent('林悦'))).payload.data;
+  expect(saved).toEqual(result.payload.data);
+});
+
+it("已撤回、已拒绝和已取消的假条不能核销", async () => {
+  for (const action of ['withdraw', 'reject', 'cancel']) {
+    const item = (await call('/api/leaves', 'POST', leave())).payload.data;
+    const path = `/api/leaves/${item.id}`;
+    expect((await call(path, 'PATCH', { action, owner: '林悦', reviewer: '陈越', reason: '材料不完整', expectedRevision: 1 })).status).toBe(200);
+    expect((await call(path, 'PATCH', { action: 'complete', owner: '林悦', confirmedReturn: true, expectedRevision: 2 })).status).toBe(409);
+  }
+});
+
 it("校验完整预约、可用性、班级审核、占用冲突、取消与重启持久化", async () => {
   expect(todayInShanghai()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   expect((await call("/api/bookings", "POST", { ...booking(), facilityId: "F2" })).status).toBe(400);

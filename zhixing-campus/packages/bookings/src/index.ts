@@ -1,4 +1,7 @@
 import type { LeaveDetails } from "./leave";
+import type { LeaveEvent } from "./leave-workflow";
+export { leaveHistory, leaveActionLabel } from "./leave-workflow";
+export type { LeaveEvent, LeaveAction } from "./leave-workflow";
 export { watchDemoReset } from "./demo-reset";
 export { leaveNatures, leaveDestinations, validateLeaveDetails, validLeaveTime, leaveTimes, leaveBounds, formatLeaveRange, formatLeaveDuration } from "./leave";
 export type { LeaveDetails } from "./leave";
@@ -28,6 +31,7 @@ export type NewBooking = Pick<BookingRequest, "facilityId" | "owner" | "date" | 
   note?: string;
 };
 
+export type LeaveStatus = BookingStatus | "withdrawn" | "completed";
 export interface LeaveRequest extends Partial<LeaveDetails> {
   id: string;
   owner: string;
@@ -41,7 +45,11 @@ export interface LeaveRequest extends Partial<LeaveDetails> {
   endPeriod?: "上午" | "下午";
   reason: string;
   phone: string;
-  status: BookingStatus;
+  status: LeaveStatus;
+  revision?: number;
+  history?: LeaveEvent[];
+  completedAt?: string;
+  completedBy?: string;
   reviewReason?: string;
   reviewer?: string;
   createdAt: string;
@@ -56,9 +64,11 @@ export const bookingStatusLabel: Record<BookingStatus, string> = {
   rejected: "已拒绝",
   cancelled: "已取消",
 };
-export const leaveStatusLabel: Record<BookingStatus, string> = {
+export const leaveStatusLabel: Record<LeaveStatus, string> = {
   ...bookingStatusLabel,
   approved: "已通过",
+  withdrawn: "已撤回",
+  completed: "已完结",
 };
 export { bookingSlots, validBookingCount } from "./rules";
 export function todayInShanghai() {
@@ -108,11 +118,23 @@ export function createBookingClient(baseUrl = "http://localhost:5606") {
       return request<LeaveRequest[]>(`/api/leaves${params.size ? `?${params}` : ""}`);
     },
     createLeave(input: NewLeave) { return request<LeaveRequest>("/api/leaves", "POST", input); },
-    reviewLeave(id: string, decision: "approve" | "reject", reviewer: string, reason = "") {
-      return request<LeaveRequest>(`/api/leaves/${encodeURIComponent(id)}`, "PATCH", { action: decision, reviewer, reason });
+    getLeave(id: string, owner: string) {
+      return request<LeaveRequest>(`/api/leaves/${encodeURIComponent(id)}?owner=${encodeURIComponent(owner)}`);
     },
-    cancelLeave(id: string, owner: string) {
-      return request<LeaveRequest>(`/api/leaves/${encodeURIComponent(id)}`, "PATCH", { action: "cancel", owner });
+    reviewLeave(id: string, decision: "approve" | "reject", reviewer: string, reason = "", expectedRevision?: number) {
+      return request<LeaveRequest>(`/api/leaves/${encodeURIComponent(id)}`, "PATCH", { action: decision, reviewer, reason, expectedRevision });
+    },
+    cancelLeave(id: string, owner: string, expectedRevision?: number) {
+      return request<LeaveRequest>(`/api/leaves/${encodeURIComponent(id)}`, "PATCH", { action: "cancel", owner, expectedRevision });
+    },
+    completeLeave(id: string, owner: string, expectedRevision: number) {
+      return request<LeaveRequest>(`/api/leaves/${encodeURIComponent(id)}`, "PATCH", { action: "complete", owner, expectedRevision, confirmedReturn: true });
+    },
+    withdrawLeave(id: string, owner: string, expectedRevision: number) {
+      return request<LeaveRequest>(`/api/leaves/${encodeURIComponent(id)}`, "PATCH", { action: "withdraw", owner, expectedRevision });
+    },
+    resubmitLeave(id: string, input: NewLeave, expectedRevision: number) {
+      return request<LeaveRequest>(`/api/leaves/${encodeURIComponent(id)}`, "PATCH", { ...input, action: "resubmit", expectedRevision });
     },
   };
 }

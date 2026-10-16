@@ -55,6 +55,14 @@ test('返回箭头不依赖图片资源，点击可返回首页',async({page})=>
   await expect(page.locator('.mobile-brand')).toHaveText('知行校园');
   await expect(page.locator('.approval-entry')).toBeVisible();
 });
+test('旧服务不支持详情接口时明确提示重启，而不是让学生误以为假条丢失',async({page})=>{
+  await page.addInitScript(()=>localStorage.setItem('zhixing:student-session','林悦'));
+  await page.route('**/api/leaves/LV-old?**',route=>route.fulfill({status:404,json:{error:'接口不存在'}}));
+  await page.goto(`${url}/#/pages/leave-detail/index?id=LV-old`);
+  await expect(page.getByRole('alert')).toContainText('请假服务仍是旧版本');
+  await expect(page.getByRole('alert')).toContainText('已保存的假条不会删除');
+  await expect(page.locator('.leave-detail-actions')).toHaveCount(0);
+});
 test('未登录时明确引导登录而不是误报没有申请',async({page})=>{
   await page.goto(`${url}/#/pages/records/index?category=leave`);
   await expect(page.locator('.records-empty-title')).toHaveText('登录后，查看你的申请');

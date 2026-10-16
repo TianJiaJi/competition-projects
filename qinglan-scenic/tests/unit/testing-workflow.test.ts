@@ -7,7 +7,7 @@ import { workflowSteps, nextTestStep, testWorkflow } from '../../apps/testing/sr
 import { modelSample } from '../../apps/testing/src/engine';
 it('并发参数无效时回落到2000并发、30秒，并保留合法的手动配置',()=>{
  const endpoints=resolveEndpoints(deliverySystem());
- expect(normalizeConfig({concurrency:NaN,duration:NaN,rps:0,endpointId:endpoints[0].id},endpoints)).toMatchObject({concurrency:2000,duration:30});
+ expect(normalizeConfig({concurrency:NaN,duration:NaN,rps:0,endpointId:endpoints[0].id},endpoints)).toMatchObject({concurrency:1000,duration:30});
  expect(normalizeConfig({concurrency:100,duration:30,rps:0,endpointId:endpoints[0].id},endpoints)).toMatchObject({concurrency:100,duration:30});
 });
 it('推荐顺序为UI、API、并发、专项，开始测试与导航不产生测试证据',()=>{

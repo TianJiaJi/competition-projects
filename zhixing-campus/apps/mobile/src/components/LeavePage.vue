@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch, onMounted, onBeforeUnmount } from "vue";
-import { createBookingClient, todayInShanghai, leaveNatures, leaveDestinations, validateLeaveDetails, leaveBounds, formatLeaveDuration, validLeaveTime, type NewLeave } from "@scene/bookings";
+import { createBookingClient, todayInShanghai, leaveNatures, leaveDestinations, validateLeaveDetails, leaveBounds, formatLeaveDuration, validLeaveTime, leaveTimes, type NewLeave, type LeaveRequest } from "@scene/bookings";
 import { demoTeacher, leaveTypes, leaveWindowDays, studentFor } from "../../../../scenario/teaching";
 import { state, themeStyle } from "../store";
 import { back, navigate, notify } from "../platform";
@@ -12,7 +12,11 @@ let stopAccessibility: (() => void) | undefined;
 onMounted(() => { stopAccessibility = enhanceH5Accessibility(); });
 onBeforeUnmount(() => stopAccessibility?.());
 // #endif
+const props = defineProps<{ requestId?: string }>();
 const client = createBookingClient(import.meta.env.VITE_BOOKING_API_URL);
+const editingRecord = ref<LeaveRequest>();
+const editLoading = ref(false), editReady = ref(false);
+let editSequence = 0;
 const form = reactive({ leavingCampus: null as boolean | null, leavingCity: null as boolean | null,
   destination: "", address: "", emergencyName: "", emergencyPhone: "", type: "", nature: "",
   startDate: "", startTime: "08:00:00", endDate: "", endTime: "18:00:00",
@@ -31,7 +35,30 @@ const duration = computed(() => {
 watch(() => form.leavingCampus, (leaving) => {
   if (!leaving) { form.leavingCity = false; form.destination = ""; form.address = ""; }
   else form.leavingCity = null;
-});
+}, { flush: 'sync' });
+async function loadForEditing() {
+  const sequence = ++editSequence;
+  editReady.value = false;
+  if (!props.requestId) return;
+  serviceError.value = '';
+  if (!state.identity) { serviceError.value = '请先登录后修改本人的假条'; return; }
+  editLoading.value = true;
+  try {
+    const item = await client.getLeave(props.requestId, state.identity);
+    if (sequence !== editSequence) return;
+    if (item.status !== 'withdrawn') throw new Error('请先在假条详情中撤回申请，再修改提交。');
+    const times = leaveTimes(item);
+    Object.assign(form, { leavingCampus: item.leavingCampus ?? null, leavingCity: item.leavingCity ?? null,
+      destination: item.destination || '', address: item.address || '', emergencyName: item.emergencyName || '',
+      emergencyPhone: item.emergencyPhone || '', type: item.type, nature: item.nature || '',
+      startDate: item.startDate, startTime: times.start, endDate: item.endDate, endTime: times.end,
+      reason: item.reason, phone: item.phone, cc: [...(item.cc || [])], confirmed: false });
+    editingRecord.value = item; editReady.value = true;
+  } catch (cause) { if (sequence === editSequence) serviceError.value = cause instanceof Error ? cause.message : '原表单读取失败'; }
+  finally { if (sequence === editSequence) editLoading.value = false; }
+}
+watch(() => [props.requestId, state.identity], () => void loadForEditing(), { immediate: true });
+onBeforeUnmount(() => { editSequence++; });
 function valueOf(event: unknown) {
   const field = event as { detail?: { value?: unknown }; target?: { value?: unknown } };
   return String(field.detail?.value ?? field.target?.value ?? "");
@@ -62,7 +89,7 @@ function validate() {
   return !Object.keys(errors).length;
 }
 async function submit() {
-  if (sending.value) return;
+  if (sending.value || editLoading.value || (props.requestId && !editReady.value)) return;
   serviceError.value = "";
   if (!validate()) {
     const key = Object.keys(errors)[0];
@@ -77,18 +104,27 @@ async function submit() {
   if (detailError) { serviceError.value = detailError; return; }
   sending.value = true;
   try {
-    await client.createLeave(input);
-    notify("请假申请已提交");
-    navigate("records", "category=leave");
+    if (props.requestId && editingRecord.value) {
+      await client.resubmitLeave(props.requestId, input, editingRecord.value.revision || 0);
+      notify('修改已提交，等待教师重新审核');
+      uni.redirectTo({ url: `/pages/leave-detail/index?id=${encodeURIComponent(props.requestId)}` });
+    } else {
+      await client.createLeave(input);
+      notify("请假申请已提交");
+      navigate("records", "category=leave");
+    }
   } catch (cause) { serviceError.value = cause instanceof Error ? cause.message : "提交失败，请重试"; }
   finally { sending.value = false; }
 }
 </script>
 <template>
   <view class="mobile-root leave-page" :style="themeStyle">
-    <view class="mobile-header"><button role="button" class="back-button" aria-label="返回" @click="back">‹</button><view><text class="mobile-brand">请假申请</text><text class="mobile-eyebrow">学生服务</text></view></view>
+    <view class="mobile-header"><button role="button" class="back-button" aria-label="返回" @click="back">‹</button><view><text class="mobile-brand">{{ requestId ? '修改请假申请' : '请假申请' }}</text><text class="mobile-eyebrow">学生服务</text></view></view>
     <view class="leave-content">
-      <view class="leave-intro"><text>填写请假信息</text><text>由带班教师审核，提交后可在服务记录查看进度。</text></view>
+      <view v-if="editLoading" class="leave-intro" role="status">正在读取原表单…</view>
+      <view v-else-if="requestId && !editReady" class="leave-intro"><text class="form-error" role="alert">{{ serviceError }}</text><button role="button" class="secondary-button" @click="state.identity ? loadForEditing() : navigate('login')">{{ state.identity ? '重新读取表单' : '登录后修改' }}</button><button role="button" class="secondary-button" @click="navigate('leave-detail', `id=${encodeURIComponent(requestId)}`)">查看假条详情</button></view>
+      <template v-if="!requestId || editReady">
+      <view class="leave-intro"><text>{{ requestId ? '修改后重新提交' : '填写请假信息' }}</text><text>{{ requestId ? '原表单已带入。请核对修改内容并重新确认，提交后将再次进入教师审核。' : '由带班教师审核，提交后可在服务记录查看进度。' }}</text></view>
       <text class="leave-section-heading">去向信息</text>
       <view class="leave-group">
         <view class="leave-field field-leavingCampus"><view class="leave-row"><text class="leave-label required">是否离校</text><view class="inline-choices"><button role="button" :aria-pressed="form.leavingCampus === true" :class="{ selected: form.leavingCampus === true }" @click="form.leavingCampus = true">是</button><button role="button" :aria-pressed="form.leavingCampus === false" :class="{ selected: form.leavingCampus === false }" @click="form.leavingCampus = false">否</button></view></view><text v-if="errors.leavingCampus" class="field-error">{{ errors.leavingCampus }}</text></view>
@@ -110,7 +146,8 @@ async function submit() {
       </view>
       <text class="leave-section-heading">抄送人 <text class="optional-label">选填</text></text>
       <view class="leave-group cc-group"><view v-if="form.cc.length" class="cc-person"><text>{{ form.cc[0] }} · 带班教师</text><button role="button" aria-label="移除抄送人" @click="form.cc = []">×</button></view><button role="button" class="cc-add" @click="sheet = 'cc'">＋ {{ form.cc.length ? '更换抄送人' : '添加抄送人' }}</button></view>
-      <view class="leave-submit-area"><button role="button" class="truth-check field-confirmed" :aria-pressed="form.confirmed" @click="form.confirmed = !form.confirmed"><text class="check-square" :class="{ checked: form.confirmed }">{{ form.confirmed ? '✓' : '' }}</text><text>本人确认以上填写信息真实有效</text></button><text v-if="errors.confirmed" class="field-error">{{ errors.confirmed }}</text><text v-if="Object.keys(errors).length" class="form-error" role="alert">请完善标记的必填信息后提交。</text><text v-if="serviceError" class="form-error" role="alert">{{ serviceError }}</text><button role="button" class="primary-button" :disabled="sending" @click="submit">{{ sending ? '提交中…' : state.identity ? '提交申请' : '登录并提交' }}</button><text class="leave-footer-note">请假起止时间限未来 {{ leaveWindowDays }} 天内；审批结果将同步至我的服务记录。</text></view>
+      <view class="leave-submit-area"><button role="button" class="truth-check field-confirmed" :aria-pressed="form.confirmed" @click="form.confirmed = !form.confirmed"><text class="check-square" :class="{ checked: form.confirmed }">{{ form.confirmed ? '✓' : '' }}</text><text>本人确认以上填写信息真实有效</text></button><text v-if="errors.confirmed" class="field-error">{{ errors.confirmed }}</text><text v-if="Object.keys(errors).length" class="form-error" role="alert">请完善标记的必填信息后提交。</text><text v-if="serviceError" class="form-error" role="alert">{{ serviceError }}</text><button role="button" class="primary-button" :disabled="sending" @click="submit">{{ sending ? '提交中…' : state.identity ? requestId ? '重新提交审核' : '提交申请' : '登录并提交' }}</button><text class="leave-footer-note">请假起止时间限未来 {{ leaveWindowDays }} 天内；审批结果将同步至我的服务记录。</text><button v-if="requestId && serviceError" role="button" class="secondary-button" @click="navigate('leave-detail', `id=${encodeURIComponent(requestId)}`)">查看最新假条</button></view>
+      </template>
     </view>
     <LeaveDateRange v-if="sheet === 'time'" :start-date="form.startDate" :end-date="form.endDate" :start-time="form.startTime" :end-time="form.endTime" @close="sheet = ''" @apply="setTime" />
     <FormSheet v-else-if="sheet" :title="sheetTitle" @close="sheet = ''"><button v-for="option in options" :key="option" role="button" class="sheet-option" @click="choose(option)">{{ option }}<text>›</text></button><text v-if="sheet === 'cc'" class="sheet-description">抄送人可查看申请内容；带班教师仍负责审批。</text></FormSheet>

@@ -8,7 +8,7 @@ for (const width of [1280,1440,1920]) {
     await receive(page);
     await generateApi(page);
     await nav(page,'并发测试');
-    await expect(page.getByRole('heading',{name:'并发测试，观察多请求下的系统表现。',exact:true})).toBeVisible();
+    await expect(page.getByRole('heading',{name:'并发测试，观察业务操作的承载表现。',exact:true})).toBeVisible();
     await expect(page.getByRole('navigation').getByRole('button',{name:/^并发测试/})).toBeVisible();
     await expect(page.getByRole('navigation').getByRole('button',{name:/^压力测试/})).toHaveCount(0);
     await expect(page.locator('.pressure-workspace .metrics article')).toHaveCount(4);
@@ -29,7 +29,7 @@ for (const width of [1280,1440,1920]) {
 }
 test('加压停止及栏目切换保留本轮曲线，刷新后同样保留',async({page})=>{
   await receive(page); await generateApi(page); await nav(page,'并发测试');
-  await page.getByLabel('目标并发',{exact:true}).fill('20');
+  await page.getByLabel('预期并发目标',{exact:true}).fill('20');
   await page.getByLabel('持续时长',{exact:true}).fill('10');
   await page.getByRole('button',{name:'开始并发测试',exact:true}).click();
   await expect(page.getByRole('button',{name:'加压一级',exact:true})).toBeEnabled();
@@ -40,7 +40,7 @@ test('加压停止及栏目切换保留本轮曲线，刷新后同样保留',asy
   await expect(page.locator('.pressure-stage .stage-time')).toContainText('/ 10 s');
   await expect(page.locator('.trend-chart .chart-cursor')).toHaveCount(2);
   await nav(page,'交付概览'); await nav(page,'并发测试');
-  await expect(page.getByLabel('目标并发',{exact:true})).toHaveValue('2000');
+  await expect(page.getByLabel('预期并发目标',{exact:true})).toHaveValue('1000');
   await expect(page.getByLabel('持续时长',{exact:true})).toHaveValue('30');
   await expect(page.locator('.pressure-stage .stage-time')).toContainText('/ 10 s');
   await expect(page.locator('.event-strip')).toContainText('手动');
@@ -50,7 +50,7 @@ test('加压停止及栏目切换保留本轮曲线，刷新后同样保留',asy
   await page.reload();
   await expect(page.locator('.delivery-task-card')).toHaveCount(1);
   await nav(page,'并发测试');
-  await expect(page.getByLabel('目标并发',{exact:true})).toHaveValue('2000');
+  await expect(page.getByLabel('预期并发目标',{exact:true})).toHaveValue('1000');
   await expect(page.getByLabel('持续时长',{exact:true})).toHaveValue('30');
   await expect(page.locator('.trend-chart .chart-cursor')).toHaveCount(2);
   await expect(page.locator('.event-strip')).toContainText('手动');
@@ -58,7 +58,7 @@ test('加压停止及栏目切换保留本轮曲线，刷新后同样保留',asy
   await expect(page.getByRole('dialog',{name:'并发测试报告',exact:true})).toBeVisible();
   const pending=page.waitForEvent('download');await page.getByRole('button',{name:'下载 HTML 报告',exact:true}).click();
   const file=await pending,html=await readFile((await file.path())!,'utf8');
-  expect(html).toContain('<h1>本次并发目标验收</h1>');expect(html).not.toContain('压力测试');
+  expect(html).toContain('<h1>业务操作并发测试报告</h1>');expect(html).not.toContain('压力测试');
   await page.keyboard.press('Escape');await nav(page,'验收报告');
   await page.getByRole('button',{name:'汇总验收报告',exact:true}).click();
   await expect(page.locator('.acceptance-stat-grid')).toContainText('并发测试');

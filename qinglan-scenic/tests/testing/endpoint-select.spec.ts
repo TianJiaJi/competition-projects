@@ -2,16 +2,17 @@ import { expect, test } from '@playwright/test';
 import { fixtures, receive, nav, generateApi, noOverflow } from './helpers';
 
 test.beforeEach(async ({ page }) => fixtures(page));
-test('接口选择使用可搜索的主题列表，支持键盘、关闭及选中保持', async ({ page }) => {
+test('业务操作选择使用可搜索的主题列表，支持键盘、关闭及选中保持', async ({ page }) => {
   await receive(page); await generateApi(page); await nav(page, '并发测试');
-  const trigger = page.getByRole('button', { name: '并发测试目标接口', exact: true });
+  const trigger = page.getByRole('button', { name: '并发测试业务操作', exact: true });
   await expect(page.locator('.pressure-config select')).toHaveCount(0);
   await trigger.click();
-  const search = page.getByRole('textbox', { name: '搜索目标接口' });
+  const search = page.getByRole('textbox', { name: '搜索业务操作' });
   await expect(search).toBeFocused();
   await search.fill('not-an-endpoint');
-  await expect(page.locator('.endpoint-select').getByRole('status')).toContainText('没有匹配的接口');
-  await search.fill('/api/bookings/availability');
+  await expect(page.locator('.endpoint-select').getByRole('status')).toContainText('没有匹配的业务操作');
+  await search.fill('查询教室可用时段');
+  await expect(page.locator('.endpoint-option code')).toHaveCount(0);
   const option = page.getByRole('option').first();
   const name = await option.locator('strong').innerText();
   await search.press('ArrowDown');
@@ -27,7 +28,7 @@ test('接口选择使用可搜索的主题列表，支持键盘、关闭及选�
   await page.keyboard.press('Escape');
   await expect(page.getByRole('listbox')).toHaveCount(0);
   await trigger.click();
-  await page.getByRole('heading', { name: '并发测试，观察多请求下的系统表现。', exact: true }).click();
+  await page.getByRole('heading', { name: '并发测试，观察业务操作的承载表现。', exact: true }).click();
   await expect(page.getByRole('listbox')).toHaveCount(0);
   await page.getByRole('button', { name: '开始并发测试', exact: true }).click();
   await expect(trigger).toBeDisabled();

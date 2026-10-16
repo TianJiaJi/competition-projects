@@ -2,7 +2,7 @@
 import { computed, nextTick, onMounted, onBeforeUnmount, ref, watch } from 'vue';
 import { Check, ChevronDown, Search } from 'lucide-vue-next';
 import type { EndpointConfig } from './engine';
-const props = defineProps<{ modelValue: string; endpoints: EndpointConfig[]; disabled?: boolean }>();
+const props = defineProps<{ modelValue: string; endpoints: EndpointConfig[]; disabled?: boolean; business?: boolean }>();
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>();
 const open = ref(false);
 const search = ref('');
@@ -40,18 +40,18 @@ function move(event: KeyboardEvent) {
 </script>
 <template>
   <div ref="root" class="endpoint-select" @focusout="blur" @keydown.esc.prevent.stop="close" @keydown="move">
-    <button ref="trigger" type="button" class="endpoint-trigger" aria-label="并发测试目标接口" aria-haspopup="listbox" :aria-expanded="open" :disabled="disabled || !endpoints.length" @click="toggle" @keydown.down.prevent="!open && toggle()">
-      <span><strong>{{ selected?.name || '请选择目标接口' }}</strong><code>{{ selected?.path || '先生成 API 用例' }}</code></span><ChevronDown :size="15" :class="{ rotated: open }"/>
+    <button ref="trigger" type="button" class="endpoint-trigger" :aria-label="business ? '并发测试业务操作' : '并发测试目标接口'" aria-haspopup="listbox" :aria-expanded="open" :disabled="disabled || !endpoints.length" @click="toggle" @keydown.down.prevent="!open && toggle()">
+      <span><strong>{{ selected?.name || (business ? '请选择业务操作' : '请选择目标接口') }}</strong><code>{{ business ? '单项业务操作' : selected?.path || '先生成 API 用例' }}</code></span><ChevronDown :size="15" :class="{ rotated: open }"/>
     </button>
     <div v-if="open" class="endpoint-popover">
-      <div class="endpoint-search"><Search :size="15"/><input ref="searchInput" v-model="search" aria-label="搜索目标接口" placeholder="搜索接口名称、路径或方法"/></div>
-      <div class="endpoint-options" role="listbox" aria-label="目标接口列表">
+      <div class="endpoint-search"><Search :size="15"/><input ref="searchInput" v-model="search" :aria-label="business ? '搜索业务操作' : '搜索目标接口'" :placeholder="business ? '搜索业务操作名称' : '搜索接口名称、路径或方法'"/></div>
+      <div class="endpoint-options" role="listbox" :aria-label="business ? '业务操作列表' : '目标接口列表'">
         <button v-for="item in filtered" :key="item.id" type="button" role="option" :aria-selected="item.id === modelValue" class="endpoint-option" @click="choose(item.id)">
-          <span class="endpoint-method">{{ item.method }}</span><span class="endpoint-copy"><strong>{{ item.name }}</strong><code>{{ item.path }}</code></span><Check v-if="item.id === modelValue" :size="15"/>
+          <span v-if="!business" class="endpoint-method">{{ item.method }}</span><span class="endpoint-copy"><strong>{{ item.name }}</strong><code v-if="!business">{{ item.path }}</code></span><Check v-if="item.id === modelValue" :size="15"/>
         </button>
-        <p v-if="!filtered.length" class="endpoint-empty" role="status">没有匹配的接口，试试其他关键词</p>
+        <p v-if="!filtered.length" class="endpoint-empty" role="status">没有匹配的{{business ? '业务操作' : '接口'}}，试试其他关键词</p>
       </div>
-      <div class="endpoint-footer">{{ filtered.length }} 个接口 · ↑↓ 选择 · Enter 确认 · Esc 关闭</div>
+      <div class="endpoint-footer">{{ filtered.length }} 项{{business ? '业务操作' : '接口'}} · ↑↓ 选择 · Enter 确认 · Esc 关闭</div>
     </div>
   </div>
 </template>

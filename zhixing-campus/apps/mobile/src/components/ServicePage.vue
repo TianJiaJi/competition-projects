@@ -30,7 +30,7 @@ function fieldValue(event: unknown): string {
   const field = event as { detail?: { value?: unknown }; target?: { value?: unknown } };
   return String(field.detail?.value ?? field.target?.value ?? '');
 }
-const props = defineProps<{ page: string; initialCategory?: string }>();
+const props = defineProps<{ page: string; initialCategory?: string; refreshKey?: number }>();
 const recordCategory = ref('booking');
 const recordCategories = [
   { id: 'booking', label: '预约消息', icon: 'calendar-days', emptyTitle: '还没有预约记录', emptyCopy: '找到合适的教室，开启下一次讨论。', action: '预约教室', target: 'booking' },
@@ -73,6 +73,10 @@ async function refreshBookings() {
 onMounted(() => {
   if (props.page === "records") void refreshBookings();
 });
+watch(() => [props.refreshKey, state.identity], () => {
+  if (props.page === 'records') void refreshBookings();
+});
+function openLeave(id?: string) { if (id) navigate('leave-detail', `id=${encodeURIComponent(id)}`); }
 const login = reactive({ username: "user01", password: "123456" });
 const titles: Record<string, string> = {
   home: scenario.name,
@@ -140,7 +144,7 @@ const pendingRecordCount = computed(() => records.value.filter(item => ['待审�
 function recordIcon(item: { bookingId?: string; leaveId?: string }) { return recordCategories.find(category => category.id === categoryOf(item))!.icon; }
 function recordStatusTone(status: string) {
   if (['待审核', '待处理', '处理中', '待到访'].includes(status)) return 'pending';
-  if (['已预约', '已通过', '已完成'].includes(status)) return 'approved';
+  if (['已预约', '已通过', '已完成', '已完结'].includes(status)) return 'approved';
   return status === '已拒绝' ? 'rejected' : 'neutral';
 }
 function updatedLabel(value:string) { return new Date(value).toLocaleString('zh-CN',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}); }
@@ -200,13 +204,14 @@ async function cancelBooking(id: string, kind: "booking" | "leave" = "booking") 
       const updated = await bookingClient.cancel(id, state.identity);
       sharedBookings.value = sharedBookings.value.map((item) => item.id === id ? updated : item);
     } else {
-      const updated = await bookingClient.cancelLeave(id, state.identity);
+      const updated = await bookingClient.cancelLeave(id, state.identity, sharedLeaves.value.find(item => item.id === id)?.revision || 0);
       sharedLeaves.value = sharedLeaves.value.map((item) => item.id === id ? updated : item);
     }
     notify("申请已取消");
   } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : "取消失败";
+    const message = cause instanceof Error ? cause.message : "取消失败";
     await refreshBookings();
+    error.value = message;
   } finally { cancellingId.value = ""; }
 }
 </script>
@@ -459,7 +464,7 @@ async function cancelBooking(id: string, kind: "booking" | "leave" = "booking") 
           <text class="records-empty-copy">{{ state.identity ? activeRecordCategory.emptyCopy : '预约、请假与报修进度，为你统一收好。' }}</text>
           <button role="button" class="records-primary" @click="state.identity ? navigate(activeRecordCategory.target) : navigate('login')">{{ state.identity ? activeRecordCategory.action : '登录查看' }}<text aria-hidden="true">↗</text></button>
         </view>
-        <view v-for="item in visibleRecords" :key="item.id" class="notice-card service-record">
+        <view v-for="item in visibleRecords" :key="item.id" class="notice-card service-record" :class="{ 'leave-record-card': !!item.leaveId }" @click="openLeave(item.leaveId)">
           <view class="record-card-heading">
             <view class="record-kind-icon" :class="categoryOf(item)" aria-hidden="true"><Icon :name="recordIcon(item)" active :size="21" /></view>
             <view class="record-heading-copy"><text class="record-title">{{ item.title }}</text><text class="record-kind-label">{{ item.bookingId ? item.location : item.category }}</text></view>
@@ -471,11 +476,13 @@ async function cancelBooking(id: string, kind: "booking" | "leave" = "booking") 
             <text v-if="item.reviewer" class="record-reviewer">审核教师：{{ item.reviewer }}</text>
             <text v-if="item.reviewReason" class="record-review-reason">审核说明：{{ item.reviewReason }}</text>
           </view>
+          <button v-if="item.leaveId" role="button" class="record-detail-link" aria-label="查看假条详情" @click.stop="openLeave(item.leaveId)">查看表单与审批流程 <text aria-hidden="true">›</text></button>
           <view class="record-footer">
             <text class="record-updated">{{ item.updatedAt ? updatedLabel(item.updatedAt) + ' 更新' : item.date + ' 提交' }}</text>
-            <view v-if="(item.bookingId && ['待审核', '已预约'].includes(item.status)) || (item.leaveId && ['待审核', '已通过'].includes(item.status))" class="record-actions">
-              <button role="button" v-if="item.bookingId" class="record-cancel" :aria-disabled="!!cancellingId" :disabled="!!cancellingId" @click="cancelBooking(item.bookingId)">{{ cancellingId === item.bookingId ? '取消中…' : '取消预约' }}</button>
-              <button role="button" v-if="item.leaveId" class="record-cancel" :aria-disabled="!!cancellingId" :disabled="!!cancellingId" @click="cancelBooking(item.leaveId, 'leave')">{{ cancellingId === item.leaveId ? '取消中…' : '取消请假' }}</button>
+            <view v-if="(item.bookingId && ['待审核', '已预约'].includes(item.status)) || (item.leaveId && ['待审核', '已通过', '已撤回'].includes(item.status))" class="record-actions">
+              <button role="button" v-if="item.bookingId" class="record-cancel" :aria-disabled="!!cancellingId" :disabled="!!cancellingId" @click.stop="cancelBooking(item.bookingId)">{{ cancellingId === item.bookingId ? '取消中…' : '取消预约' }}</button>
+              <button role="button" v-if="item.leaveId && item.status === '已通过'" class="record-complete" @click.stop="openLeave(item.leaveId)">去核销</button>
+              <button role="button" v-if="item.leaveId" class="record-cancel" :aria-disabled="!!cancellingId" :disabled="!!cancellingId" @click.stop="cancelBooking(item.leaveId, 'leave')">{{ cancellingId === item.leaveId ? '取消中…' : '取消请假' }}</button>
             </view>
           </view>
         </view>

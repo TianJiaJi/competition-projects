@@ -313,7 +313,7 @@ describe("staged pressure lifecycle", () => {
       endpoints,
     );
     expect(normalized).toMatchObject({
-      concurrency: 2000,
+      concurrency: 1000,
       duration: 120,
       rps: 9999,
       endpointId: "live",
@@ -566,7 +566,7 @@ describe("staged pressure lifecycle", () => {
     expect(html).toContain("本轮已提前停止");
     expect(html).toContain("未达标 · 未达到并发目标");
     expect(html).toContain("距离目标差额");
-    expect(html).toContain("本地模型负载记录");
+    expect(html).toContain("数据来源：本地模型");
     expect(html).toContain("未达标问题 · 已记录");
     expect(html).not.toContain("第 5 级");
     expect(reportDocument(report).observedStatistics.failed).toBe(1);

@@ -26,9 +26,9 @@ it('峰值演示波动只作用于第五级，种子与采样时间可复现，�
  vi.spyOn(Math,'random').mockReturnValue(0.125);
  expect(createLoadModel()).toEqual({kind:'peak-overshoot-demo',seed:536870912,minOvershootPercent:1,maxOvershootPercent:4});
 });
-it('默认2000并发30秒，2000与10000不被截断；超出上限才限制为10000',()=>{
+it('默认1000并发30秒，2000与10000不被截断；超出上限才限制为10000',()=>{
  const endpoints=resolveEndpoints(system);
- expect(normalizeConfig({concurrency:NaN,duration:NaN,rps:0,endpointId:endpoint.id},endpoints)).toMatchObject({concurrency:2000,duration:30});
+ expect(normalizeConfig({concurrency:NaN,duration:NaN,rps:0,endpointId:endpoint.id},endpoints)).toMatchObject({concurrency:1000,duration:30});
  for(const concurrency of [2000,10000])expect(normalizeConfig({...report().config!,concurrency},endpoints).concurrency).toBe(concurrency);
  expect(normalizeConfig({...report().config!,concurrency:10001},endpoints).concurrency).toBe(10000);
 });

@@ -31,6 +31,12 @@
       }
     },
     {
+      "path": "pages/leave-detail/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/notices/index",
       "style": {
         "navigationStyle": "custom"

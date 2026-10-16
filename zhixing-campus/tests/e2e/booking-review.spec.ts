@@ -134,6 +134,163 @@ test("教师拒绝预约需原因；学生可见反馈", async ({ browser }) => 
   } finally { await student.close(); await teacher.close(); }
 });
 
+test('学生打开完整假条、撤回修改重提、旧版本审批被拒绝，最新审核后可取消', async ({ browser }) => {
+  const student = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  const teacher = await browser.newPage();
+  const date = new Date(`${todayInShanghai()}T00:00:00Z`); date.setUTCDate(date.getUTCDate() + 2);
+  const day = date.toISOString().slice(0, 10);
+  const reason = '请假前往医院进行检查';
+  const changed = '修改后前往医院复诊检查';
+  const response = await fetch(isolatedUrl + '/api/leaves', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+    owner: '林悦', type: '病假', startDate: day, startTime: '08:10:15', endDate: day, endTime: '10:30:20',
+    reason, phone: '13900001001', leavingCampus: true, leavingCity: true, destination: '医院就诊', address: '人民医院门诊部',
+    emergencyName: '林女士', emergencyPhone: '13900001111', nature: '日常请假', cc: ['陈越'], confirmed: true,
+  }) });
+  expect(response.status).toBe(201);
+  const original = (await response.json()).data;
+  try {
+    await studentLogin(student);
+    await student.goto(`${mobileUrl}/#/pages/records/index?category=leave`);
+    const card = student.locator('.service-record').filter({ hasText: reason });
+    await card.locator('.record-title').click();
+    await expect(student).toHaveURL(/pages\/leave-detail\/index/);
+    await expect(student.locator('.detail-status-title')).toHaveText('待审核');
+    await expect(student.locator('.leave-progress')).toContainText('等待陈越');
+    for (const value of ['人民医院门诊部', '林女士', '13900001111', '13900001001', '2024010101', '08:10:15', '10:30:20', '2 小时 20 分钟 5 秒', original.id]) {
+      await expect(student.locator('.leave-detail-fields').filter({ hasText: value }).first()).toBeVisible();
+    }
+    expect(await student.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await student.screenshot({ path: '.local/qa/student-leave-detail-pending.png', fullPage: true });
+    await teacherLogin(teacher);
+    await teacher.getByRole('button', { name: '审批', exact: true }).click();
+    await teacher.getByRole('button', { name: /学生请假/ }).click();
+    await teacher.getByRole('button', { name: '刷新申请' }).click();
+    await teacher.locator('.teacher-card').filter({ hasText: reason }).click(); // Keep the original version open.
+    await student.getByRole('button', { name: '撤回修改', exact: true }).click();
+    await expect(student.getByRole('dialog', { name: '撤回修改', exact: true })).toBeVisible();
+    await expect(student.locator('.uni-modal:visible')).toHaveCount(0);
+    await expect(student.locator('uni-toast:visible')).toHaveCount(0);
+    await student.screenshot({ path: '.local/qa/leave-confirm-withdraw.png' });
+    await student.getByRole('dialog').getByRole('button', { name: '确认撤回', exact: true }).click();
+    await expect(student).toHaveURL(/pages\/leave\/index\?id=/);
+    await expect(student.getByRole('textbox', { name: '请假事由', exact: true })).toHaveValue(reason);
+    await expect(student.getByRole('textbox', { name: '详细地址', exact: true })).toHaveValue('人民医院门诊部');
+    await expect(student.locator('.field-leavingCity').getByRole('button', { name: '是', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(student.locator('.field-time')).toContainText('08:10:15');
+    await expect(student.getByRole('button', { name: /本人确认/ })).toHaveAttribute('aria-pressed', 'false');
+    await student.getByRole('textbox', { name: '请假事由', exact: true }).fill(changed);
+    await student.getByRole('textbox', { name: '详细地址', exact: true }).fill('市第一人民医院门诊部');
+    await student.getByRole('button', { name: /本人确认/ }).click();
+    const path = `**/api/leaves/${original.id}`;
+    await student.route(path, route => route.abort());
+    await student.getByRole('button', { name: '重新提交审核', exact: true }).click();
+    await expect(student.getByRole('alert')).toContainText('暂不可连接');
+    await expect(student.getByRole('textbox', { name: '请假事由', exact: true })).toHaveValue(changed);
+    await student.unroute(path);
+    await student.getByRole('button', { name: '重新提交审核', exact: true }).click();
+    await expect(student).toHaveURL(/pages\/leave-detail\/index/);
+    await expect(student.locator('.detail-status-title')).toHaveText('待审核');
+    await expect(student.locator('.leave-event')).toHaveCount(3);
+    await expect(student.locator('.leave-event-list')).toContainText('修改后重新提交');
+    await expect(student.locator('.leave-detail-fields').filter({ hasText: changed })).toBeVisible();
+    await teacher.getByRole('button', { name: '通过申请', exact: true }).click();
+    await expect(teacher.getByRole('alert')).toContainText('表单已更新');
+    await teacher.getByRole('button', { name: '关闭详情' }).click();
+    await teacher.getByRole('button', { name: '刷新申请' }).click();
+    await teacher.locator('.teacher-card').filter({ hasText: changed }).click();
+    await expect(teacher.getByRole('dialog')).toContainText('市第一人民医院门诊部');
+    await teacher.getByRole('button', { name: '通过申请', exact: true }).click();
+    await student.getByRole('button', { name: '刷新假条详情' }).click();
+    await expect(student.locator('.detail-status-title')).toHaveText('已通过');
+    await expect(student.getByRole('button', { name: '撤回修改', exact: true })).toHaveCount(0);
+    await student.getByRole('button', { name: '取消申请', exact: true }).click();
+    await expect(student.getByRole('dialog', { name: '取消申请', exact: true })).toBeVisible();
+    await expect(student.locator('.uni-modal:visible')).toHaveCount(0);
+    await expect(student.locator('uni-toast:visible')).toHaveCount(0);
+    await student.screenshot({ path: '.local/qa/leave-confirm-cancel.png' });
+    await student.getByRole('dialog').getByRole('button', { name: '确认取消', exact: true }).click();
+    await expect(student.locator('.detail-status-title')).toHaveText('已取消');
+    await expect(student.locator('.leave-event')).toHaveCount(5);
+    await expect(student.locator('.leave-detail-actions')).toHaveCount(0);
+    const saved = (await (await fetch(isolatedUrl + '/api/leaves?owner=' + encodeURIComponent('林悦'))).json()).data;
+    expect(saved).toHaveLength(1);
+    expect(saved[0]).toMatchObject({ id: original.id, status: 'cancelled', reason: changed });
+    await student.reload();
+    await expect(student.locator('.detail-status-title')).toHaveText('已取消');
+    await expect(student.locator('.leave-event')).toHaveCount(5);
+  } finally { await student.close(); await teacher.close(); }
+});
+
+test('已通过假条可确认核销，学生与教师均显示完结且不能再次操作', async ({ browser }) => {
+  const student = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  const teacher = await browser.newPage();
+  const date = new Date(`${todayInShanghai()}T00:00:00Z`); date.setUTCDate(date.getUTCDate() + 2);
+  const day = date.toISOString().slice(0, 10);
+  const reason = '核销流程测试请假事由';
+  const response = await fetch(isolatedUrl + '/api/leaves', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+    owner: '林悦', type: '事假', startDate: day, endDate: day, startTime: '08:00:00', endTime: '10:00:00', reason, phone: '13900001001',
+    leavingCampus: false, leavingCity: false, destination: '', address: '', emergencyName: '林女士', emergencyPhone: '13900001111', nature: '日常请假', cc: [], confirmed: true,
+  }) });
+  expect(response.status).toBe(201);
+  const item = (await response.json()).data;
+  expect((await fetch(isolatedUrl + `/api/leaves/${item.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'approve', reviewer: '陈越', expectedRevision: 1 }) })).status).toBe(200);
+  try {
+    let completeRequests = 0;
+    student.on('request', request => { if (request.method() === 'PATCH' && request.postDataJSON()?.action === 'complete') completeRequests++; });
+    await studentLogin(student);
+    await student.goto(`${mobileUrl}/#/pages/records/index?category=leave`);
+    const card = student.locator('.service-record').filter({ hasText: reason });
+    await card.getByRole('button', { name: '去核销', exact: true }).click();
+    await expect(student.locator('.leave-progress')).toContainText('等待本人核销');
+    await expect(student.getByRole('button', { name: '取消申请', exact: true })).toBeVisible();
+    await student.getByRole('button', { name: '核销假条', exact: true }).click();
+    const confirmation = student.getByRole('dialog', { name: '核销假条', exact: true });
+    await expect(confirmation).toBeVisible();
+    await expect(confirmation).toContainText('已通过');
+    await expect(confirmation).toContainText('已完结');
+    await expect(student.locator('.uni-modal:visible')).toHaveCount(0);
+    await expect(student.locator('uni-toast:visible')).toHaveCount(0);
+    await student.screenshot({ path: '.local/qa/leave-confirm-complete.png' });
+    await confirmation.getByRole('button', { name: '暂不操作', exact: true }).click();
+    await expect(student.locator('.detail-status-title')).toHaveText('已通过');
+    expect(completeRequests).toBe(0);
+    await student.getByRole('button', { name: '核销假条', exact: true }).click();
+    await student.keyboard.press('Escape');
+    await expect(confirmation).toHaveCount(0);
+    await student.getByRole('button', { name: '核销假条', exact: true }).click();
+    let finish!: () => void;
+    const hold = new Promise<void>(resolve => { finish = resolve; });
+    await student.route(`**/api/leaves/${item.id}`, async route => { await hold; await route.fallback(); });
+    await confirmation.getByRole('button', { name: '确认核销', exact: true }).click();
+    await expect(confirmation.getByRole('button', { name: '正在处理…', exact: true })).toBeDisabled();
+    await expect(confirmation.getByRole('button', { name: '关闭确认面板' })).toBeDisabled();
+    await expect(confirmation.getByRole('button', { name: '暂不操作', exact: true })).toBeDisabled();
+    await student.keyboard.press('Escape');
+    await expect(confirmation).toBeVisible();
+    finish();
+    await expect(student.locator('.detail-status-title')).toHaveText('已完结');
+    await expect(student.locator('.leave-progress')).toContainText('正常完结');
+    await expect(student.locator('.leave-event-list')).toContainText('返校核销 · 流程完结');
+    await expect(student.locator('.leave-detail-fields').filter({ hasText: '核销人' })).toContainText('林悦');
+    await expect(student.locator('.leave-detail-actions')).toHaveCount(0);
+    expect(completeRequests).toBe(1);
+    await student.screenshot({ path: '.local/qa/student-leave-completed.png', fullPage: true });
+    await student.getByRole('button', { name: '返回', exact: true }).click();
+    await expect(card).toContainText('已完结');
+    await expect(card.getByRole('button', { name: /去核销|取消请假/ })).toHaveCount(0);
+    await card.getByRole('button', { name: '查看假条详情' }).click();
+    await expect(student.locator('.detail-status-title')).toHaveText('已完结');
+    await teacherLogin(teacher);
+    await teacher.getByRole('button', { name: '审批', exact: true }).click();
+    await teacher.getByRole('button', { name: /学生请假/ }).click();
+    await teacher.getByRole('button', { name: '刷新申请' }).click();
+    await teacher.getByRole('combobox', { name: '状态筛选' }).selectOption('completed');
+    await teacher.locator('.teacher-card').filter({ hasText: reason }).click();
+    await expect(teacher.getByRole('dialog')).toContainText('已核销完结');
+    await expect(teacher.getByRole('button', { name: '通过申请', exact: true })).toHaveCount(0);
+  } finally { await student.close(); await teacher.close(); }
+});
+
 test("学生请假 → 教师审批 → 学生查看结果", async ({ browser }) => {
   const student = await browser.newPage({ viewport: { width: 390, height: 844 } });
   const teacher = await browser.newPage();

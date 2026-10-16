@@ -68,7 +68,10 @@ export interface Statistics {
   rps: number;
 }
 export interface LoadConfig {
+  /** Acceptance target, not the applied load ceiling. */
   concurrency: number;
+  /** Independent safety ceiling. Absent on legacy target-only reports. */
+  maxConcurrency?: number;
   duration: number;
   rps: number; // 0 = derive throughput from concurrency / mean response time
   endpointId: string;
@@ -98,12 +101,19 @@ export interface LoadEvent {
   level: number;
   concurrency: number;
 }
-export interface LoadModelProfile {
+export type LoadModelProfile = {
   kind: 'peak-overshoot-demo';
   seed: number;
   minOvershootPercent: number;
   maxOvershootPercent: number;
-}
+} | {
+  kind: 'capacity-demo';
+  seed: number;
+  /** Explicitly preset simulation capacity, never a measured service limit. */
+  capacity: number;
+  offset: 500;
+  variation: 100;
+};
 export interface LoadResult {
   loadModel?: LoadModelProfile;
   samples: Sample[];

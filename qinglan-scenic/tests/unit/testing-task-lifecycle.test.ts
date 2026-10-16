@@ -3,11 +3,12 @@ import { buildAcceptance, feedbackAcceptance, acceptanceDocument, acceptanceHtml
 import { taskProgress, taskSubmissionBlockers, completeTask } from '../../apps/testing/src/task-lifecycle';
 import { historicalTasks } from '../../apps/testing/src/task-history';
 import { copy, newTaskStore, receiveDelivery, parseMaterials, generateApiCases, touchTask, validTaskStore, persistTask, loadTask, type CampusTaskStore } from '../../apps/testing/src/task-store';
-import { campusProject, deliverySystem, assignments } from '../../apps/testing/src/campus-handoff';
+import { campusProject, deliverySystem, assignments, API_CASE_COUNT } from '../../apps/testing/src/campus-handoff';
 import { modelSample } from '../../apps/testing/src/engine';
 import { resolveEndpoints } from '../../apps/testing/src/systems';
 import { SpecialSession } from '../../apps/testing/src/special-engine';
 
+const planCount = campusProject.pages.reduce((sum,page)=>sum+page.checks.length,0) + API_CASE_COUNT + assignments.length + 1;
 let finished: CampusTaskStore;
 beforeAll(async () => {
   finished=newTaskStore();receiveDelivery(finished);parseMaterials(finished);generateApiCases(finished);
@@ -25,7 +26,7 @@ describe('任务列表与完结状态', () => {
     const s=newTaskStore();expect(historicalTasks).toHaveLength(3);expect(taskProgress(s)).toBeNull();
     expect(s.reports).toEqual([]);expect(s.receivedAt).toBeNull();
     receiveDelivery(s);expect(receiveDelivery(s)).toBe(false);
-    expect(taskProgress(s)).toMatchObject({phase:'pending',label:'待测试',done:0,total:132});
+    expect(taskProgress(s)).toMatchObject({phase:'pending',label:'待测试',done:0,total:planCount});
     expect(buildAcceptance(s).sections.every(section=>section.done===0)).toBe(true);
     expect(JSON.stringify(s)).not.toContain(historicalTasks[0].id);
   });
@@ -36,7 +37,7 @@ describe('任务列表与完结状态', () => {
   });
   it('全部计划完成后依次待汇总、待提交，重测使报告过期', () => {
     const s=copy(finished);expect(taskProgress(s)?.phase).toBe('summarize');
-    s.acceptance=buildAcceptance(s);expect(taskProgress(s)).toMatchObject({phase:'submit',percent:100,done:132,total:132});
+    s.acceptance=buildAcceptance(s);expect(taskProgress(s)).toMatchObject({phase:'submit',percent:100,done:planCount,total:planCount});
     touchTask(s);expect(taskProgress(s)?.phase).toBe('summarize');
     expect(completeTask(s)).toBe(false);
   });
@@ -90,7 +91,7 @@ describe('任务列表与完结状态', () => {
     expect(acceptanceDocument(report,s.completion).taskCompletion?.reportId).toBe(report.id);
     expect(acceptanceHtml(report,s.completion)).toContain(s.completion!.id);
     expect(restored.store.uiChecks).toEqual({});expect(restored.store.apiResults).toEqual({});
-    expect(restored.store.archivedTask!.acceptance!.evidence.apiCases).toHaveLength(110);
+    expect(restored.store.archivedTask!.acceptance!.evidence.apiCases).toHaveLength(API_CASE_COUNT);
     const legacy=newTaskStore();expect(validTaskStore(legacy)).toBe(true);expect(loadTask({getItem:()=>JSON.stringify(legacy)}).recovered).toBe(false);
   });
   it('不接受缺少完整报告或引用错误的完成记录', () => {

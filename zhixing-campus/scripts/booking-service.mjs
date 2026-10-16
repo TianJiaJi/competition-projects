@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { scenario } from "../scenario/config.ts";
 import { bookingSlots, validBookingCount } from "../packages/bookings/src/rules.ts";
 import { validateLeaveDetails, validLeaveTime, leaveBounds } from "../packages/bookings/src/leave.ts";
+import { leaveHistory } from "../packages/bookings/src/leave-workflow.ts";
 import { bookingWindowDays, demoClass, demoTeacher, leaveTypes, leaveWindowDays, studentFor } from "../scenario/teaching.ts";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
@@ -73,6 +74,40 @@ function verifyStudent(owner) {
 }
 function verifyTeacher(reviewer, record) {
   if (reviewer !== demoTeacher.name || classOf(record) !== demoClass.id) fail(403, "只能审核所带班级的学生申请");
+}
+
+// Creation and resubmission share validation; clients cannot patch arbitrary
+// status/owner/audit fields or bypass the overlap checks when editing.
+function leaveFields(input, leaves, excludeId) {
+  const owner = cleanText(input.owner, 30);
+  const student = verifyStudent(owner);
+  const type = cleanText(input.type, 10);
+  const startDate = cleanText(input.startDate, 10);
+  const endDate = cleanText(input.endDate, 10);
+  const startTime = cleanText(input.startTime, 8);
+  const endTime = cleanText(input.endTime, 8);
+  const reason = cleanText(input.reason, 1000);
+  const phone = cleanText(input.phone, 20);
+  const detailError = validateLeaveDetails(input);
+  if (detailError) fail(400, detailError);
+  if (!leaveTypes.includes(type)) fail(400, "请选择请假类型");
+  if (!validDate(startDate, leaveWindowDays) || !validDate(endDate, leaveWindowDays) || !validLeaveTime(startTime) || !validLeaveTime(endTime)) fail(400, "请填写有效的起止日期和时分秒");
+  const interval = leaveBounds({ startDate, endDate, startTime, endTime });
+  if (interval.end <= interval.start) fail(400, "结束时间必须晚于开始时间");
+  if (interval.start < Date.now()) fail(400, "开始时间不能早于当前时间");
+  if (reason.length < 5) fail(400, "请填写 5–1000 字的请假事由");
+  if (!/^1\d{10}$/.test(phone)) fail(400, "请填写 11 位本人手机号");
+  if (leaves.some(item => {
+    if (item.id === excludeId || item.owner !== owner || !["pending", "approved"].includes(item.status)) return false;
+    const existing = leaveBounds(item);
+    return interval.start < existing.end && interval.end > existing.start;
+  })) fail(409, "该时段已有有效请假申请");
+  return { owner, classId: student.classId, type, startDate, startTime, endDate, endTime, reason, phone,
+    leavingCampus: input.leavingCampus, leavingCity: input.leavingCity,
+    destination: input.leavingCampus ? input.destination : "",
+    address: input.leavingCampus ? input.address.trim() : "",
+    emergencyName: input.emergencyName.trim(), emergencyPhone: input.emergencyPhone.trim(),
+    nature: input.nature, cc: [...input.cc], confirmed: true };
 }
 
 export function createBookingServer({ dataFile = defaultDataFile, leaveFile = join(dirname(dataFile), "leave-requests.json") } = {}) {
@@ -167,43 +202,24 @@ export function createBookingServer({ dataFile = defaultDataFile, leaveFile = jo
       }
       if (req.method === "POST" && url.pathname === "/api/leaves") {
         const input = await currentBody(req);
-        const owner = cleanText(input.owner, 30);
-        const student = verifyStudent(owner);
-        const type = cleanText(input.type, 10);
-        const startDate = cleanText(input.startDate, 10);
-        const endDate = cleanText(input.endDate, 10);
-        const startTime = cleanText(input.startTime, 8);
-        const endTime = cleanText(input.endTime, 8);
-        const reason = cleanText(input.reason, 1000);
-        const phone = cleanText(input.phone, 20);
-        const detailError = validateLeaveDetails(input);
-        if (detailError) fail(400, detailError);
-        if (!leaveTypes.includes(type)) fail(400, "请选择请假类型");
-        if (!validDate(startDate, leaveWindowDays) || !validDate(endDate, leaveWindowDays) || !validLeaveTime(startTime) || !validLeaveTime(endTime)) fail(400, "请填写有效的起止日期和时分秒");
-        const interval = leaveBounds({ startDate, endDate, startTime, endTime });
-        if (interval.end <= interval.start) fail(400, "结束时间必须晚于开始时间");
-        if (interval.start < Date.now()) fail(400, "开始时间不能早于当前时间");
-        if (reason.length < 5) fail(400, "请填写 5–1000 字的请假事由");
-        if (!/^1\d{10}$/.test(phone)) fail(400, "请填写 11 位本人手机号");
-        if (leaves.some((item) => {
-          if (item.owner !== owner || !["pending", "approved"].includes(item.status)) return false;
-          const existing = leaveBounds(item);
-          return interval.start < existing.end && interval.end > existing.start;
-        })) fail(409, "该时段已有有效请假申请");
+        const fields = leaveFields(input, leaves);
         const now = new Date().toISOString();
-        const leave = { id: `LV-${randomUUID()}`, owner, classId: student.classId, type, startDate, startTime,
-          endDate, endTime, reason, phone,
-          leavingCampus: input.leavingCampus, leavingCity: input.leavingCity,
-          destination: input.leavingCampus ? input.destination : "",
-          address: input.leavingCampus ? input.address.trim() : "",
-          emergencyName: input.emergencyName.trim(), emergencyPhone: input.emergencyPhone.trim(),
-          nature: input.nature, cc: [...input.cc], confirmed: true,
-          status: "pending", createdAt: now, updatedAt: now };
+        const leave = { ...fields, id: `LV-${randomUUID()}`, status: "pending", revision: 1,
+          history: [{ action: "submitted", actor: fields.owner, at: now }], createdAt: now, updatedAt: now };
         const next = [leave, ...leaves]; save(leaveFile, next); leaves = next;
         return send(res, 201, leave);
       }
       const bookingMatch = /^\/api\/bookings\/(BR-[0-9a-f-]+)$/.exec(url.pathname);
       const leaveMatch = /^\/api\/leaves\/(LV-[0-9a-f-]+)$/.exec(url.pathname);
+      if (req.method === "GET" && leaveMatch) {
+        const owner = url.searchParams.get("owner");
+        verifyStudent(owner);
+        const record = leaves.find(item => item.id === leaveMatch[1]);
+        if (!record) fail(404, "请假申请不存在或已被重置");
+        if (record.owner !== owner) fail(403, "只能查看自己的请假申请");
+        res.setHeader("Cache-Control", "no-store");
+        return send(res, 200, record);
+      }
       if (req.method === "PATCH" && (bookingMatch || leaveMatch)) {
         const input = await currentBody(req);
         const isLeave = !!leaveMatch;
@@ -211,10 +227,31 @@ export function createBookingServer({ dataFile = defaultDataFile, leaveFile = jo
         const record = source.find((item) => item.id === (bookingMatch || leaveMatch)[1]);
         if (!record) fail(404, "申请不存在");
         const action = input.action;
+        if (isLeave) {
+          if (["approve", "reject"].includes(action)) verifyTeacher(input.reviewer, record);
+          else if (["withdraw", "resubmit", "cancel", "complete"].includes(action)) {
+            verifyStudent(input.owner);
+            if (input.owner !== record.owner) fail(403, "只能操作自己的请假申请");
+          }
+          if (["withdraw", "resubmit", "complete"].includes(action) && !Number.isInteger(input.expectedRevision)) fail(400, "请刷新并提供当前表单版本");
+          if (input.expectedRevision !== undefined && input.expectedRevision !== (record.revision || 0)) fail(409, "表单已更新，请刷新后查看最新内容再操作");
+        }
         let updated;
-        if (action === "cancel") {
+        if (isLeave && action === "complete") {
+          if (record.status !== "approved") fail(409, "只有已通过且未完结的假条可以核销");
+          if (input.confirmedReturn !== true) fail(400, "请确认已返校或已结束请假后再核销");
+          const now = new Date().toISOString();
+          updated = { ...record, status: "completed", completedAt: now, completedBy: record.owner, updatedAt: now };
+        } else if (isLeave && action === "withdraw") {
+          if (!["pending", "rejected"].includes(record.status)) fail(409, "当前状态不能撤回修改，已通过的申请请取消后重新申请");
+          updated = { ...record, status: "withdrawn", updatedAt: new Date().toISOString() };
+        } else if (isLeave && action === "resubmit") {
+          if (record.status !== "withdrawn") fail(409, "请先撤回申请再修改提交");
+          updated = { ...record, ...leaveFields(input, leaves, record.id), status: "pending",
+            reviewer: undefined, reviewReason: undefined, updatedAt: new Date().toISOString() };
+        } else if (action === "cancel") {
           if (input.owner !== record.owner) fail(403, "只能取消自己的申请");
-          if (!["pending", "approved"].includes(record.status)) fail(409, "该申请已无法取消");
+          if (!(isLeave ? ["pending", "approved", "withdrawn"] : ["pending", "approved"]).includes(record.status)) fail(409, "该申请已无法取消");
           updated = { ...record, status: "cancelled", updatedAt: new Date().toISOString() };
         } else if (action === "approve" || action === "reject") {
           verifyTeacher(input.reviewer, record);
@@ -226,6 +263,13 @@ export function createBookingServer({ dataFile = defaultDataFile, leaveFile = jo
           updated = { ...record, status: action === "approve" ? "approved" : "rejected", reviewReason: reason || undefined,
             reviewer: demoTeacher.name, updatedAt: new Date().toISOString() };
         } else fail(400, "不支持的申请操作");
+        if (isLeave) {
+          const eventAction = { withdraw: "withdrawn", resubmit: "resubmitted", approve: "approved", reject: "rejected", cancel: "cancelled", complete: "completed" }[action];
+          updated.revision = (record.revision || 0) + 1;
+          updated.history = [...leaveHistory(record), { action: eventAction,
+            actor: ["approve", "reject"].includes(action) ? demoTeacher.name : record.owner,
+            at: updated.updatedAt, reason: action === "reject" ? updated.reviewReason : undefined }];
+        }
         const next = source.map((item) => item.id === record.id ? updated : item);
         save(isLeave ? leaveFile : dataFile, next);
         if (isLeave) leaves = next; else records = next;
